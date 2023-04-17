@@ -4,11 +4,25 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#define MAX_TOKENS 1000
+
 int main(int argc, char** argv) {
 
+    int res, fd1, fd2, bytes_read;
+    char* buffer[4096];
 
+    res = mkfifo("pipe", 0666);
+    
+    fd1 = open("pipe", O_RDONLY);
+    fd2 = open("pipe", O_WRONLY); // Mantém o servidor a correr
 
+    //while ((bytes_read = read(fd1, buffer, sizeof(buffer))) > 0) {
+        
+    //}
 
+    close(fd1);
+    close(fd2);
+    unlink("pipe");
 
     return 0;
 }
