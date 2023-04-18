@@ -14,6 +14,13 @@ void tokenize(char* comando, char** argv) {
     char* cmd = strdup(comando);
     char* token = NULL;
     int pid, status, ret;
+
+    for (int i = 0; cmd[i] != '\0'; i++) {
+        if (cmd[i] == '\n') {
+            cmd[i] = '\0';
+            break;
+        }
+    }
     
     token = strsep(&cmd, " ");
 
@@ -53,14 +60,15 @@ void execute(char** comand) {
 
 int main(int argc, char** argv) {
     int fd, bytes_read;
-    char buffer[1024];
+    char buffer[4096];
     char* store[MAX_TOKENS];
-    
+
     fd = open("pipe", O_WRONLY);
 
     while ((bytes_read = read(0, buffer, sizeof(buffer))) > 0) {
+        buffer[bytes_read] = '\0';
         tokenize(buffer, store);
-        //execute(store);
+        execute(store);
     }
     
     close(fd);
