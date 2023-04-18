@@ -41,7 +41,7 @@ void execute(char** comand) {
 
     pid = fork();
     if (pid == 0) {
-        ret = execvp(comand[0], comand);
+        ret = execvp(comand[2], comand+2);
         if (ret == -1) {
             perror("execvp");
             exit(EXIT_FAILURE);
@@ -68,7 +68,8 @@ int main(int argc, char** argv) {
     while ((bytes_read = read(0, buffer, sizeof(buffer))) > 0) {
         buffer[bytes_read] = '\0';
         tokenize(buffer, store);
-        execute(store);
+        if (!strcmp(store[0], "execute") && !strcmp(store[1], "-u"))
+            execute(store);
     }
     
     close(fd);
