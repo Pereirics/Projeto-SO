@@ -29,7 +29,7 @@ FUNCIONALIDADES BÁSICAS
             - O cliente deve informar o servidor com:
                 - PID do processo que terminou
                 - Timestamp atual
-            - O cliente deve informar o utilizador o tempo de execução do programa em milisegundos
+            - O cliente deve informar o utilizador do tempo de execução do programa em milisegundos
     
     CONSULTA DE PROGRAMAS EM EXECUÇÃO
         - Opção status
