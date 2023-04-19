@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 
 #define MAX_TOKENS 1000
 
@@ -36,11 +37,35 @@ void tokenize(char* comando, char** argv) {
 }
 
 void execute(char** comand) {
-    int ret, status;
+    int ret, status, fd;
+    char pid_str[32];
+    char sec_str[32];
+    char usec_str[32]; 
     pid_t pid;
+    struct timeval tv;
 
     pid = fork();
     if (pid == 0) {
+        pid_t child_pid;
+        child_pid = getpid();
+
+        printf("PID do programa a executar: %d\n", child_pid);
+        
+        fd = open("pipe", O_WRONLY);
+    
+        sprintf(pid_str, "%d", child_pid);
+        //write(fd, pid_str, strlen(pid_str)+1);
+
+        //write(fd, comand[2], strlen(comand[2]));
+        
+        gettimeofday(&tv, NULL);
+
+        sprintf(sec_str, "%ld", tv.tv_sec);
+        sprintf(usec_str, "%ld", tv.tv_usec);
+        write(fd, sec_str, strlen(sec_str)+1);
+        write(fd, usec_str, strlen(usec_str)+1);
+
+        close(fd);
         ret = execvp(comand[2], comand+2);
         if (ret == -1) {
             perror("execvp");

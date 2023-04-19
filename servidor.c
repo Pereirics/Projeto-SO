@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #define MAX_TOKENS 1000
 
@@ -16,9 +17,9 @@ int main(int argc, char** argv) {
     fd1 = open("pipe", O_RDONLY);
     fd2 = open("pipe", O_WRONLY); // Mantém o servidor a correr
 
-    //while ((bytes_read = read(fd1, buffer, sizeof(buffer))) > 0) {
-        
-    //}
+    while ((bytes_read = read(fd1, buffer, sizeof(buffer))) > 0) {
+        write(1, buffer, bytes_read); 
+    }
 
     close(fd1);
     close(fd2);
