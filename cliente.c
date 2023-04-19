@@ -54,9 +54,9 @@ void execute(char** comand) {
         fd = open("pipe", O_WRONLY);
     
         sprintf(pid_str, "%d", child_pid);
-        //write(fd, pid_str, strlen(pid_str)+1);
+        write(fd, pid_str, strlen(pid_str)+1);
 
-        //write(fd, comand[2], strlen(comand[2]));
+        write(fd, comand[2], strlen(comand[2]));
         
         gettimeofday(&tv, NULL);
 
@@ -87,8 +87,6 @@ int main(int argc, char** argv) {
     int fd, bytes_read;
     char buffer[4096];
     char* store[MAX_TOKENS];
-
-    fd = open("pipe", O_WRONLY);
 
     while ((bytes_read = read(0, buffer, sizeof(buffer))) > 0) {
         buffer[bytes_read] = '\0';
