@@ -34,7 +34,7 @@ FUNCIONALIDADES BÁSICAS
     CONSULTA DE PROGRAMAS EM EXECUÇÃO
         - Opção status
             - Feito pelo servidor, o cliente apenas envia o pedido e recebe a resposta, apresentando-a ao utlizador
-            - Listar um por linha, os programas em execuçãp no momento, deve conter:
+            - Listar um por linha, os programas em execução no momento, deve conter:
                 - PID
                 - Nome
                 - Tempo de execução até ao momento (milisegundos)
