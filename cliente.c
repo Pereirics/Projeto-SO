@@ -10,42 +10,38 @@
 
 #define MAX_TOKENS 1000
 
-void tokenize(char *comando, char **argv)
+typedef struct prog
 {
+    int pid;
+    char cmd[256];
+    struct timeval start;
+    int ms;
+} prog;
+
+
+
+void tokenize(char* comando, char **store) {
     int token_number = 0;
-    char *cmd = strdup(comando);
     char *token = NULL;
-    int pid, status, ret;
 
-    for (int i = 0; cmd[i] != '\0'; i++)
-    {
-        if (cmd[i] == '\n')
-        {
-            cmd[i] = '\0';
-            break;
-        }
-    }
-
-    token = strsep(&cmd, " "); // encontra ' ' numa string e torna em '\n';
-
-    while (token != NULL && token_number < MAX_TOKENS)
-    {
-        argv[token_number] = token;
-        // printf("%s!", argv[token_number]);
-        token = strsep(&cmd, " "); // strstep function keeps track of the last position in the input string where it found a delimiter character, using a static variable internally.
+    token = strsep(&comando, " "); // encontra ' ' numa string e torna em '\n';
+    while (token != NULL && token_number < MAX_TOKENS) {
+        store[token_number] = token;
+        token = strsep(&comando, " ");
         token_number++;
     }
 
-    argv[token_number] = NULL;
+    store[token_number] = NULL;
 }
 
-void execute(char **comand)
-{
+void execute(char **comand, char* cmd) {
     int ret, status, fd, fd1[2], fd2[2];
     char pid_str[32];
     char sec_str[32];
     char usec_str[32];
     pid_t pid;
+
+    struct prog novo;
 
     pipe(fd1); // this pipe will be used to send the start time of the command to the parent process.
     pipe(fd2);
@@ -68,100 +64,91 @@ void execute(char **comand)
         write(1, pid_str, len);
 
         // Indica ao servidor e ao processo-pai o PID do programa a executar
-        snprintf(pid_str, sizeof(pid_str), "%d\n", child_pid);
-        write(fd, pid_str, strlen(pid_str));     // servidor
-        write(fd1[1], pid_str, strlen(pid_str)); // pai
+        char pid_str1[8];
+        snprintf(pid_str1, sizeof(pid_str1), "%d ", child_pid);
+        novo.pid = child_pid;
+        write(fd1[1], pid_str1, strlen(pid_str1)); // pai
 
         // Indica ao servidor o nome do programa a executar
-        write(fd, comand[2], sizeof(comand[2]));
-        write(fd, "\n", strlen("\n"));
+        strcpy(novo.cmd, cmd);
 
         // Calcula o timestamp
         gettimeofday(&tv1, NULL);      
         
         // Passa o timestamp ao servidor
-        snprintf(sec_str, sizeof(sec_str), "%ld\n", tv1.tv_sec);
-        write(fd, sec_str, strlen(sec_str));
-        snprintf(usec_str, sizeof(usec_str), "%ld\n", tv1.tv_usec);
-        write(fd, usec_str, strlen(usec_str));
-
+        novo.start = tv1;
+        
         // Passa o timestamp ao processo-pai
         write(fd2[1], &tv1, sizeof(tv1));
+
+        write(fd, &novo, sizeof(novo));
        
         close(fd);
         close(fd1[1]);
         close(fd2[1]);
 
-        ret = execvp(comand[2], comand + 2);
+        ret = execvp(comand[0], comand);
         if (ret == -1)
         {
             perror("execvp");
             exit(EXIT_FAILURE);
         }
     }
-    else if (pid == -1)
-    {
-        perror("fork");
-    }
     else
     {
-
-        fd = open("pipe", O_WRONLY);
-        close(fd1[1]);
-        close(fd2[1]);
 
         waitpid(pid, &status, 0);
         if (WIFEXITED(status))
         {
 
             struct timeval start, end;
+            
+            gettimeofday(&end, NULL);
+
+            fd = open("pipe", O_WRONLY);
+            close(fd1[1]);
+            close(fd2[1]);
 
             // Lê o PID do programa que acabou de executar e passa ao servidor
-            char buffer[32];
+            char buffer[8];
             int bytes_read = read(fd1[0], buffer, sizeof(buffer));
-            buffer[bytes_read] = '\0';
-            write(fd, buffer, bytes_read);
-
+            novo.pid = atoi(buffer);
+            
             // Lê o tempo inicial, calcula o final e calcula a diferença entre os dois (tempo de execução) 
-            gettimeofday(&end, NULL);
             bytes_read = read(fd2[0], &start, sizeof(start));
+            
             long diff = (end.tv_usec-start.tv_usec)/1000 + (end.tv_sec-start.tv_sec)*1000;
             char str[32];
             snprintf(str, sizeof(str), "Tempo de execução:%ld\n", diff);
             write(1, str, strlen(str)); 
 
             // Passa o tempo de execução para o servidor em ms
-            char diff_str[32];
-            snprintf(diff_str, sizeof(diff_str), "%ld", diff);
-            write(fd, diff_str, strlen(diff_str));
-            write(fd, "\n", strlen(diff_str));
-        }
-        else
-        {
-            ret = -1;
+            novo.ms = diff;
+            write(fd, &novo, sizeof(novo));
         }
 
         close(fd);
         close(fd1[0]);
+        close(fd2[0]);
     }
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     int fd, bytes_read;
-    char buffer[4096];
     char *store[MAX_TOKENS];
+    char cmd[MAX_TOKENS];
+    struct prog st;
 
     fd = open("pipe", O_WRONLY);
 
-    while ((bytes_read = read(0, buffer, sizeof(buffer))) > 0)
-    {
-        buffer[bytes_read] = '\0';
-        tokenize(buffer, store);
-        if (!strcmp(store[0], "execute") && !strcmp(store[1], "-u"))
-            execute(store);
-        else if (!strcmp(store[0], "status"))
-            write(fd, store[0], sizeof(store[0]));
+    if (!strcmp(argv[1], "execute") && !strcmp(argv[2], "-u")) {
+        strcpy(cmd, argv[3]);
+        tokenize(argv[3], store);
+        execute(store, cmd);
+    }
+    else if (!strcmp(argv[1], "status")) {
+        strcpy(st.cmd, argv[1]);
+        write(fd, &st, sizeof(st));
     }
 
     close(fd);
