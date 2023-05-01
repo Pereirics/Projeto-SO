@@ -54,9 +54,10 @@ int main(int argc, char** argv) {
             int flag = 0, pos;
             for(int j=0; j<=i; j++) { 
                 if (store[j].pid == buffer.pid) {
-                    store[j] = store[i];
+                    store[j] = store[i-1];
                     i--;
                     flag = 1;
+                    break;
             }
         }
         if (!flag) {
