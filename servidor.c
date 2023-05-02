@@ -39,7 +39,7 @@ void status(struct prog store[], int N) {
 
 int main(int argc, char** argv) {
 
-    int res, res1, fd1, fd2, fd3, bytes_read, i=0;
+    int res, res1, fd1, fd2, fd_pids, bytes_read, i=0;
     struct prog buffer;
     struct prog store[100];
 
@@ -57,6 +57,20 @@ int main(int argc, char** argv) {
             int flag = 0, pos;
             for(int j=0; j<=i; j++) { 
                 if (store[j].pid == buffer.pid) {
+                    char file[64];
+                    snprintf(file, sizeof(file), "%s/%d.txt", argv[1], store[j].pid);
+                    int fd_pids = open(file, O_CREAT | O_WRONLY, 0666);
+                    
+                    char str1[260];
+                    snprintf(str1, sizeof(str1), "%s\n", store[j].cmd);
+                    int a = write(fd_pids, str1, strlen(str1));
+
+                    char str2[128];
+                    snprintf(str2, sizeof(str2), "Tempo de execução em ms:%d\n", buffer.ms);
+                    write(fd_pids, str2, strlen(str2));
+                    
+                    close(fd_pids);
+
                     store[j] = store[i-1];
                     i--;
                     flag = 1;
@@ -72,7 +86,7 @@ int main(int argc, char** argv) {
 
     close(fd1);
     close(fd2);
-    close(fd3);
+
     unlink("pipe");
 
     return 0;
