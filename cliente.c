@@ -134,12 +134,13 @@ void execute(char **comand, char* cmd) {
 }
 
 int main(int argc, char **argv) {
-    int fd, bytes_read;
+    int fd1, fd2, bytes_read, status;
     char *store[MAX_TOKENS];
     char cmd[MAX_TOKENS];
+    char buffer[100];
     struct prog st;
 
-    fd = open("pipe", O_WRONLY);
+    fd1 = open("pipe", O_WRONLY);    
 
     if (!strcmp(argv[1], "execute") && !strcmp(argv[2], "-u")) {
         strcpy(cmd, argv[3]);
@@ -148,10 +149,15 @@ int main(int argc, char **argv) {
     }
     else if (!strcmp(argv[1], "status")) {
         strcpy(st.cmd, argv[1]);
-        write(fd, &st, sizeof(st));
+        write(fd1, &st, sizeof(st));
+        fd2 = open("pipe1", O_RDONLY);
+        while ((bytes_read = read(fd2, &buffer, sizeof(buffer))) > 0) {
+                write(1, buffer, bytes_read);
+            }
+        close(fd2);
     }
-
-    close(fd);
+    
+    close(fd1);
 
     return 0;
 }
