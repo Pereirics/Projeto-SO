@@ -140,6 +140,58 @@ void execute(char **comand, char* cmd) {
     }
 }
 
+void pipeline(char** store[], int num) {
+
+    int pipes[num-1][2];
+    int status[num];
+
+    pipe(pipes[0]);
+
+    if (fork()==0) {
+        close(pipes[0][0]);
+        dup2(pipes[0][1], 1);
+        close(pipes[0][1]);
+
+        execvp(store[0][0], store[0]);
+    }
+    
+    for (int i=1; i<num-1; i++) {
+        close(pipes[i-1][1]);
+        pipe(pipes[i]);
+        
+        if (fork() == 0) {
+            close(pipes[i][0]);
+
+            dup2(pipes[i-1][0], 0);
+            close(pipes[i-1][0]);
+
+            dup2(pipes[i][1], 1);
+            close(pipes[i][1]);
+
+            execvp(store[i][0], store[i]);
+       }
+
+       close(pipes[i][1]);
+       close(pipes[i-1][0]);
+    }
+
+    if (fork() == 0) {
+        close(pipes[num-2][1]);
+
+        dup2(pipes[num-2][0], 0);
+        close(pipes[num-2][0]);
+
+        execvp(store[num-1][0], store[num-1]);
+    }
+
+    close(pipes[num-2][0]);
+
+    for (int i=0; i<num; i++) {
+        wait(&status[i]);
+    }
+}
+
+
 int main(int argc, char **argv) {
     int fd1, fd2, bytes_read, status;
     char *store[MAX_TOKENS];
@@ -170,6 +222,7 @@ int main(int argc, char **argv) {
             new_store[i] = malloc(MAX_TOKENS * sizeof(char*));
             tokenize(store[i], new_store[i], " ");
         }
+        pipeline(new_store, num);
     }
     
     close(fd1);
