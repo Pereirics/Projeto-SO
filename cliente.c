@@ -10,7 +10,7 @@
 
 #define MAX_TOKENS 1000
 
-typedef struct prog
+typedef struct prog 
 {
     int pid;
     char cmd[256];
@@ -20,18 +20,25 @@ typedef struct prog
 
 
 
-void tokenize(char* comando, char **store) {
+int tokenize(char* comando, char **store, char* sep) {
     int token_number = 0;
     char *token = NULL;
 
-    token = strsep(&comando, " "); // encontra ' ' numa string e torna em '\n';
+    token = strsep(&comando, sep); // encontra ' ' numa string e torna em '\0';
     while (token != NULL && token_number < MAX_TOKENS) {
-        store[token_number] = token;
-        token = strsep(&comando, " ");
-        token_number++;
+        if (!strcmp("\0", token))
+            store[token_number] = NULL;
+        else {
+            store[token_number] = token;
+            token_number++;
+        }
+        token = strsep(&comando, sep);
+        
     }
 
     store[token_number] = NULL;
+
+    return token_number;
 }
 
 void execute(char **comand, char* cmd) {
@@ -144,7 +151,7 @@ int main(int argc, char **argv) {
 
     if (!strcmp(argv[1], "execute") && !strcmp(argv[2], "-u")) {
         strcpy(cmd, argv[3]);
-        tokenize(argv[3], store);
+        tokenize(argv[3], store, " ");
         execute(store, cmd);
     }
     else if (!strcmp(argv[1], "status")) {
@@ -155,6 +162,14 @@ int main(int argc, char **argv) {
                 write(1, buffer, bytes_read);
             }
         close(fd2);
+    }
+    else if (!strcmp(argv[1], "execute") && !strcmp(argv[2], "-p")) {
+        int num = tokenize(argv[3], store, "|");
+        char** new_store[num];
+        for (int i=0; i<num; i++) {
+            new_store[i] = malloc(MAX_TOKENS * sizeof(char*));
+            tokenize(store[i], new_store[i], " ");
+        }
     }
     
     close(fd1);
