@@ -126,7 +126,7 @@ void execute(char **comand, char* cmd) {
             
             long diff = (end.tv_usec-start.tv_usec)/1000 + (end.tv_sec-start.tv_sec)*1000;
             char str[32];
-            snprintf(str, sizeof(str), "Tempo de execução:%ld\n", diff);
+            snprintf(str, sizeof(str), "Tempo de execução:%ldms\n", diff);
             write(1, str, strlen(str)); 
 
             // Passa o tempo de execução para o servidor em ms
@@ -140,10 +140,25 @@ void execute(char **comand, char* cmd) {
     }
 }
 
-void pipeline(char** store[], int num) {
+void pipeline(char** store[], int num, char* cmd) {
 
     int pipes[num-1][2];
     int status[num];
+
+    int fd = open("pipe", O_WRONLY);
+    prog p;
+    p.pid = getpid();
+    strcpy(p.cmd, cmd);
+
+    char str[64];
+    snprintf(str, sizeof(str), "PID da pipeline a executar: %d\n", p.pid);
+    write(1, str, strlen(str));
+
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+    p.start = start;
+
+    write(fd, &p, sizeof(p));
 
     pipe(pipes[0]);
 
@@ -189,6 +204,17 @@ void pipeline(char** store[], int num) {
     for (int i=0; i<num; i++) {
         wait(&status[i]);
     }
+
+    gettimeofday(&end, NULL);
+
+    int diff = (end.tv_usec-start.tv_usec)/1000 + (end.tv_sec-start.tv_sec)*1000;
+    snprintf(str, sizeof(str), "Tempo de execução: %dms\n", diff);
+    write(1, str, strlen(str));
+
+    p.ms = diff;
+    write(fd, &p, sizeof(p));
+
+    close(fd);
 }
 
 
@@ -218,11 +244,15 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[1], "execute") && !strcmp(argv[2], "-p")) {
         int num = tokenize(argv[3], store, "|");
         char** new_store[num];
+        char dest[1024] = "";
         for (int i=0; i<num; i++) {
             new_store[i] = malloc(MAX_TOKENS * sizeof(char*));
             tokenize(store[i], new_store[i], " ");
+            strcat(dest, new_store[i][0]);
+            if (i != num-1) 
+                strcat(dest, " | ");
         }
-        pipeline(new_store, num);
+        pipeline(new_store, num, dest);
     }
     
     close(fd1);
