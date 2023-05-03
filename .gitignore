@@ -4,7 +4,7 @@
 ./log
 *.out
 
-cliente
-servidor
+monitor
+tracer
 
 PIDS-folder
