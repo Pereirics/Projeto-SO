@@ -147,6 +147,7 @@ void pipeline(char** store[], int num, char* cmd) {
 
     int fd = open("pipe", O_WRONLY);
     prog p;
+    int pid;
     p.pid = getpid();
     strcpy(p.cmd, cmd);
 
@@ -159,47 +160,69 @@ void pipeline(char** store[], int num, char* cmd) {
     p.start = start;
 
     write(fd, &p, sizeof(p));
-
-    pipe(pipes[0]);
-
-    if (fork()==0) {
-        close(pipes[0][0]);
-        dup2(pipes[0][1], 1);
-        close(pipes[0][1]);
-
-        execvp(store[0][0], store[0]);
-    }
     
-    for (int i=1; i<num-1; i++) {
-        close(pipes[i-1][1]);
-        pipe(pipes[i]);
+    for (int i=0; i<num; i++) {
+
+        if (i==0) {
+            pipe(pipes[i]);
+
+            if ((pid = fork())==0) {
+                close(pipes[i][0]);
+                int res=dup2(pipes[i][1], 1);
+                if (res == -1)
+                    perror("Erro no dup\n");
+                close(pipes[i][1]);
+
+                res = execvp(store[i][0], store[i]);
+                _exit(res);
+            }
+            else if (pid == -1){
+                perror("Erro no fork\n");
+            }
+            else {
+                close(pipes[i][1]);
+            }
+        }
+        else if (i==num-1) {
+            if ((pid=fork())== 0) {
+                int res=dup2(pipes[i-1][0], 0);
+                if (res == -1)
+                    perror("Erro no dup\n");
+                close(pipes[i-1][0]);
+
+                res = execvp(store[i][0], store[i]);
+                _exit(res);
+            }
+            else if(pid == -1) {
+                perror("Erro no fork\n");
+            }
+            else
+                close(pipes[i-1][0]);
+        }
+        else {
+            pipe(pipes[i]);
         
-        if (fork() == 0) {
-            close(pipes[i][0]);
+            if ((pid=fork()) == 0) {
+                close(pipes[i][0]);
 
-            dup2(pipes[i-1][0], 0);
-            close(pipes[i-1][0]);
+                int res=dup2(pipes[i-1][0], 0);
+                if (res == -1)
+                    perror("Erro no dup\n");
+                close(pipes[i-1][0]);
 
-            dup2(pipes[i][1], 1);
+                res=dup2(pipes[i][1], 1);
+                if (res == -1)
+                    perror("Erro no dup\n");
+                close(pipes[i][1]);
+
+                res=execvp(store[i][0], store[i]);
+                _exit(res);
+            }
+
             close(pipes[i][1]);
-
-            execvp(store[i][0], store[i]);
-       }
-
-       close(pipes[i][1]);
-       close(pipes[i-1][0]);
+            close(pipes[i-1][0]);
+        }
     }
-
-    if (fork() == 0) {
-        close(pipes[num-2][1]);
-
-        dup2(pipes[num-2][0], 0);
-        close(pipes[num-2][0]);
-
-        execvp(store[num-1][0], store[num-1]);
-    }
-
-    close(pipes[num-2][0]);
 
     for (int i=0; i<num; i++) {
         wait(&status[i]);
@@ -216,6 +239,7 @@ void pipeline(char** store[], int num, char* cmd) {
 
     close(fd);
 }
+
 
 
 int main(int argc, char **argv) {
