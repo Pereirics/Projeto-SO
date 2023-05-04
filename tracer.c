@@ -20,7 +20,6 @@ typedef struct prog
 } prog;
 
 
-
 int tokenize(char* comando, char **store, char* sep) {
     int token_number = 0;
     char *token = NULL;
@@ -264,10 +263,12 @@ int main(int argc, char **argv) {
         for (int i = 2, j = 0; i < argc; i++, j++) {
             p.args[j] = malloc(strlen(argv[i]) + 1);
             strcpy(p.args[j], argv[i]);
-            p.args[j][strlen(argv[i])] = '\0';
+            //p.args[j][strlen(argv[i])] = '\0'; // null-terminate the string
         }
 
-        write(fd, &p, sizeof(prog));
+
+        int a=write(fd, &p, sizeof(prog));
+        printf("BYTES WRITTEN: %d\n", a);
         close(fd);
 
     }

@@ -10,7 +10,7 @@
 
 #define MAX_TOKENS 1000
 
-typedef struct prog
+typedef struct prog 
 {
     int pid;
     char cmd[256];
@@ -56,6 +56,7 @@ int main(int argc, char** argv) {
         }
         else if (!strcmp(buffer.cmd, "stats-time")) {
             int i = 0;
+            printf("BYTES READ: %d\n", bytes_read);
             while (buffer.args[i] != NULL) {
                 printf("%s\n", buffer.args[i]);
                 i++;
