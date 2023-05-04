@@ -14,6 +14,7 @@ typedef struct prog
 {
     int pid;
     char cmd[256];
+    char* args[256];
     struct timeval start;
     int ms;
 } prog;
@@ -253,6 +254,22 @@ int main(int argc, char **argv) {
                 strcat(dest, " | ");
         }
         pipeline(new_store, num, dest);
+    }
+    else if (!strcmp(argv[1], "stats-time")) {
+
+        int fd = open("pipe", O_WRONLY);
+        prog p;
+        strcpy(p.cmd, argv[1]);
+
+        for (int i = 2, j = 0; i < argc; i++, j++) {
+            p.args[j] = malloc(strlen(argv[i]) + 1);
+            strcpy(p.args[j], argv[i]);
+            p.args[j][strlen(argv[i])] = '\0';
+        }
+
+        write(fd, &p, sizeof(prog));
+        close(fd);
+
     }
     
     close(fd1);

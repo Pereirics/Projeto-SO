@@ -14,6 +14,7 @@ typedef struct prog
 {
     int pid;
     char cmd[256];
+    char* args[256];
     struct timeval start;
     int ms;
 } prog;
@@ -53,6 +54,13 @@ int main(int argc, char** argv) {
         if (!strcmp(buffer.cmd, "status")) {
             status(store, i);
         }
+        else if (!strcmp(buffer.cmd, "stats-time")) {
+            int i = 0;
+            while (buffer.args[i] != NULL) {
+                printf("%s\n", buffer.args[i]);
+                i++;
+            }
+        }   
         else {
             int flag = 0, pos;
             for(int j=0; j<=i; j++) { 
