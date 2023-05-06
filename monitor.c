@@ -14,7 +14,7 @@ typedef struct prog
 {
     int pid;
     char cmd[256];
-    char* args[256];
+    char args[256][30];
     struct timeval start;
     int ms;
 } prog;
@@ -41,8 +41,8 @@ void status(struct prog store[], int N) {
 int main(int argc, char** argv) {
 
     int res, res1, fd1, fd2, fd_pids, bytes_read, i=0;
-    struct prog buffer;
-    struct prog store[100];
+    prog buffer;
+    prog store[100];
 
     res = mkfifo("pipe", 0666); 
     res1 = mkfifo("pipe1", 0666);
@@ -54,14 +54,11 @@ int main(int argc, char** argv) {
         if (!strcmp(buffer.cmd, "status")) {
             status(store, i);
         }
-        else if (!strcmp(buffer.cmd, "stats-time")) {
-            int i = 0;
-            printf("BYTES READ: %d\n", bytes_read);
-            while (buffer.args[i] != NULL) {
+        else if (!strcmp(buffer.cmd, "stats-time")) {    
+            for (int i = 0; i<256 && strcmp(buffer.args[i], "") != 0; i++) {   
                 printf("%s\n", buffer.args[i]);
-                i++;
             }
-        }   
+        }
         else {
             int flag = 0, pos;
             for(int j=0; j<=i; j++) { 
@@ -71,7 +68,7 @@ int main(int argc, char** argv) {
                     int fd_pids = open(file, O_CREAT | O_WRONLY, 0666);
                     
                     char str1[260];
-                    snprintf(str1, sizeof(str1), "%s\n", store[j].cmd);
+                    snprintf(str1, sizeof(str1), "%s\n",store[j].cmd);
                     int a = write(fd_pids, str1, strlen(str1));
 
                     char str2[128];
