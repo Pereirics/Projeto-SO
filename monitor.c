@@ -14,7 +14,7 @@ typedef struct prog
 {
     int pid;
     char cmd[256];
-    char args[256][30];
+    char args[256][7];
     struct timeval start;
     int ms;
 } prog;
@@ -37,6 +37,40 @@ void status(struct prog store[], int N) {
 
 }
 
+void stats_time(int args[], char* folder) {
+
+    int fd, bytes_read;
+    char str[64];
+    char buffer[100];
+    int total = 0;
+
+    for(int i=0; i<256 && args[i] != 0; i++) {
+        str[64];
+        snprintf(str, sizeof(str), "%s%d.txt", folder, args[i]);
+        fd = open(str, O_RDONLY);
+        char c;
+        int bytes_read=0;
+
+        while(read(fd, &c, sizeof(c)) == 1){
+            buffer[bytes_read++] = c;
+            if (c == '\n')
+                break;
+        }
+
+        total += atoi(buffer);
+    }
+
+    close(fd);
+
+    fd = open("pipe1", O_WRONLY);
+
+    char res[10];
+    snprintf(str, sizeof(str), "%d\n", total);
+    write(fd, str, strlen(str)); 
+
+    close(fd);
+}
+
 
 int main(int argc, char** argv) {
 
@@ -55,9 +89,11 @@ int main(int argc, char** argv) {
             status(store, i);
         }
         else if (!strcmp(buffer.cmd, "stats-time")) {    
+            int args[256] = {0};
             for (int i = 0; i<256 && strcmp(buffer.args[i], "") != 0; i++) {   
-                printf("%s\n", buffer.args[i]);
+                args[i] = atoi(buffer.args[i]);
             }
+            stats_time(args, argv[1]);
         }
         else {
             int flag = 0, pos;
@@ -67,13 +103,13 @@ int main(int argc, char** argv) {
                     snprintf(file, sizeof(file), "%s/%d.txt", argv[1], store[j].pid);
                     int fd_pids = open(file, O_CREAT | O_WRONLY, 0666);
                     
-                    char str1[260];
-                    snprintf(str1, sizeof(str1), "%s\n",store[j].cmd);
-                    int a = write(fd_pids, str1, strlen(str1));
+                    char str1[128];
+                    snprintf(str1, sizeof(str1), "%d\n", buffer.ms);
+                    write(fd_pids, str1, strlen(str1));
 
-                    char str2[128];
-                    snprintf(str2, sizeof(str2), "Tempo de execução em ms:%d\n", buffer.ms);
-                    write(fd_pids, str2, strlen(str2));
+                    char str2[260];
+                    snprintf(str2, sizeof(str2), "%s\n",store[j].cmd);
+                    int a = write(fd_pids, str2, strlen(str2));
                     
                     close(fd_pids);
 

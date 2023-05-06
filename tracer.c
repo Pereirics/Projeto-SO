@@ -14,7 +14,7 @@ typedef struct prog
 {
     int pid;
     char cmd[256];
-    char args[256][30];
+    char args[256][7];
     struct timeval start;
     int ms;
 } prog;
@@ -250,7 +250,7 @@ int main(int argc, char **argv) {
             tokenize(store[i], new_store[i], " ");
             strcat(dest, new_store[i][0]);
             if (i != num-1) 
-                strcat(dest, " | ");
+                strcat(dest, "\n");
         }
         pipeline(new_store, num, dest);
     }
@@ -269,18 +269,15 @@ int main(int argc, char **argv) {
             p.args[j][strlen(argv[i])] = '\0'; 
         }
 
+        write(fd, &p, sizeof(struct prog));
 
-        i=0;
-        while (i < j) {
-                printf("%s\n", p.args[i]);
-                i++;
-            }
-
-        int a=write(fd, &p, sizeof(struct prog));
-
-        printf("BYTES WRITTEN: %d\n", a);
         close(fd);
 
+        fd = open("pipe1", O_RDONLY);
+        char buffer[10];
+        int bytes_read = read(fd, &buffer, sizeof(buffer));
+        write(1, buffer, bytes_read);
+        close(fd);
     }
     
     close(fd1);
