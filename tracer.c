@@ -307,6 +307,27 @@ int main(int argc, char **argv) {
         write(1, buffer, bytes_read);
         close(fd);
     }
+    else if (!strcmp(argv[1], "stats-uniq")) {
+        
+        int fd = open("pipe", O_WRONLY);
+        prog p;
+
+        strcpy(p.cmd, argv[1]);
+
+        int i, j;
+        for(i=0; i<256; i++)
+            strcpy(p.args[i], "");
+
+        strcpy(p.args[0], argv[2]);
+
+        for (i = 3, j = 1; i < argc; i++, j++) {
+            strcpy(p.args[j], argv[i]);
+            p.args[j][strlen(argv[i])] = '\0'; 
+        }
+
+        write(fd, &p, sizeof(struct prog));
+
+    }
     
     close(fd1);
 

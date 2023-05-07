@@ -41,7 +41,7 @@ void stats_time(int args[], char* folder) {
 
     int fd, bytes_read;
     char str[64];
-    char buffer[100];
+    char buffer[100] = "";
     int total = 0;
 
     for(int i=0; i<256 && args[i] != 0; i++) {
@@ -75,7 +75,7 @@ void stats_command(char* cmd, int args[], char* folder) {
 
     int fd;
     char str[64];
-    char buffer[100];
+    char buffer[100] = "";
     int total = 0;
 
     for(int i=0; i<255 && args[i] != 0; i++) {
@@ -87,19 +87,20 @@ void stats_command(char* cmd, int args[], char* folder) {
         int bytes_read=0;
 
         while(read(fd, &c, sizeof(c)) == 1){
-            if (c != '\n') {
+            if (c != '\n' && c != ' ') {
                 buffer[bytes_read++] = c;
             }
             else {    
-                if (!strcmp(buffer, cmd)) 
+                if (!strcmp(buffer, cmd)) { 
                     total++;
+                }
                 strcpy(buffer, "");
                 bytes_read = 0;
             }
         }
-    }
 
-    close(fd);
+        close(fd);
+    }
 
     fd = open("pipe1", O_WRONLY);
 
@@ -108,6 +109,55 @@ void stats_command(char* cmd, int args[], char* folder) {
     write(fd, res, strlen(res)); 
 
     close(fd);
+}
+
+void stats_uniq(int args[], char* folder) {
+
+    int fd, bytes_read;
+    char str[64];
+    char buffer[100] = "";
+    int total = 0, pos = 0;
+    char store[100][20];
+
+    for (int i=0; i<100; i++) {
+        strcpy(store[i], "");
+        printf("%s\n", store[i]);
+    }
+
+    for(int i=0; i<256 && args[i] != 0; i++) {
+        str[64];
+        snprintf(str, sizeof(str), "%s%d.txt", folder, args[i]);
+        fd = open(str, O_RDONLY);
+        char c;
+        int bytes_read=0;
+
+        while(read(fd, &c, sizeof(c)) == 1){
+            if (c != '\n' && c != ' ') {
+                buffer[bytes_read++] = c;
+            }
+            else {    
+                for (int i=0; i<=pos; i++) {
+                    if (!strcmp(buffer, store[i]))
+                        break;
+                    else if (i == pos && strcmp(buffer, store[i]) != 0) {
+                        strcpy(store[pos++], buffer); 
+                    }
+                }
+                strcpy(buffer, "");
+                bytes_read = 0;
+            }
+        }
+    }
+
+    for(int i=0; i<pos; i++) {
+        printf("%s\n", store[i]);
+    }
+
+    printf("Total:%d\n", pos-1);
+
+    close(fd);
+
+
 }
 
 
@@ -140,6 +190,13 @@ int main(int argc, char** argv) {
                 args[i] = atoi(buffer.args[i+1]);
             }
             stats_command(buffer.args[0], args, argv[1]);
+        }
+        else if (!strcmp(buffer.cmd, "stats-uniq")) {
+            int args[256] = {0};
+            for (int i = 0; i<256 && strcmp(buffer.args[i], "") != 0; i++) {   
+                args[i] = atoi(buffer.args[i]);
+            }
+            stats_uniq(args, argv[1]);
         }
         else {
             int flag = 0, pos;
