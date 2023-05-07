@@ -327,6 +327,17 @@ int main(int argc, char **argv) {
 
         write(fd, &p, sizeof(struct prog));
 
+        close(fd);
+
+        fd = open("pipe1", O_RDONLY);
+        char buffer[100];
+
+        while((bytes_read = read(fd, &buffer, sizeof(buffer))) > 0) {
+            write(1, buffer, bytes_read);
+        }
+
+        close(fd);
+
     }
     
     close(fd1);

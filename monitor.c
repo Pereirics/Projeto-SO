@@ -91,6 +91,7 @@ void stats_command(char* cmd, int args[], char* folder) {
                 buffer[bytes_read++] = c;
             }
             else {    
+                buffer[bytes_read] = '\0';
                 if (!strcmp(buffer, cmd)) { 
                     total++;
                 }
@@ -121,7 +122,6 @@ void stats_uniq(int args[], char* folder) {
 
     for (int i=0; i<100; i++) {
         strcpy(store[i], "");
-        printf("%s\n", store[i]);
     }
 
     for(int i=0; i<256 && args[i] != 0; i++) {
@@ -129,34 +129,57 @@ void stats_uniq(int args[], char* folder) {
         snprintf(str, sizeof(str), "%s%d.txt", folder, args[i]);
         fd = open(str, O_RDONLY);
         char c;
-        int bytes_read=0;
+        int bytes_read=0, flag = 0, flag_args = 0;
 
+        strcpy(buffer, "");
         while(read(fd, &c, sizeof(c)) == 1){
             if (c != '\n' && c != ' ') {
                 buffer[bytes_read++] = c;
             }
-            else {    
+            else if (c == '\n' && flag < 1) {
+                flag++;
+                strcpy(buffer, "");
+                bytes_read = 0;
+            }
+            else if (flag >= 1 && !flag_args){    
+                buffer[bytes_read] = '\0';
                 for (int i=0; i<=pos; i++) {
-                    if (!strcmp(buffer, store[i]))
+                    if (!strcmp(buffer, store[i])) {
+                        strcpy(buffer, "");
+                        bytes_read = 0;
                         break;
+                    }
                     else if (i == pos && strcmp(buffer, store[i]) != 0) {
                         strcpy(store[pos++], buffer); 
+                        strcpy(buffer, "");
+                        bytes_read = 0;
+                        break;
                     }
                 }
                 strcpy(buffer, "");
                 bytes_read = 0;
             }
+
+            if (c == ' ') 
+                flag_args = 1;
+            else if (c == '\n')
+                flag_args = 0;
         }
+        strcpy(buffer, "");
+        bytes_read = 0;
     }
-
-    for(int i=0; i<pos; i++) {
-        printf("%s\n", store[i]);
-    }
-
-    printf("Total:%d\n", pos-1);
 
     close(fd);
 
+    fd = open("pipe1", O_WRONLY);
+
+    for(int i=0; i<pos; i++) {
+        write(fd, store[i], strlen(store[i]));
+        write(fd, "\n", 1);
+        printf("%s\n", store[i]);
+    }
+
+    close(fd);
 
 }
 
