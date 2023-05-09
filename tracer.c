@@ -408,7 +408,7 @@ void pipeline(char** store[], int num, char* cmd) {
 
 
 int main(int argc, char **argv) {
-    int fd_write, fd_read, bytes_read, status;
+    int fd_write, fd_read, bytes_read, bytes_written, status, res;
     char *store[MAX_TOKENS];
     char cmd[MAX_TOKENS];
     char buffer[100];
@@ -426,109 +426,280 @@ int main(int argc, char **argv) {
         }
     }
     else if (!strcmp(argv[1], "status")) {
-        strcpy(st.cmd, argv[1]);
-        write(fd_write, &st, sizeof(st));
-        fd_read = open("pipe_to_client", O_RDONLY);
-        while ((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
-                write(1, buffer, bytes_read);
+        if (argc == 2) {
+            fd_write = open("pipe_to_server", O_WRONLY);
+
+            strcpy(st.cmd, argv[1]);
+
+            bytes_written = write(fd_write, &st, sizeof(st));
+            if (bytes_written == -1) {
+                perror("Error writing to pipe_to_server");
+                _exit(1);
             }
-        close(fd_read);
+
+            fd_read = open("pipe_to_client", O_RDONLY);
+            if (fd_read == -1) {
+                perror("Error opening pipe_to_client.");
+                _exit(1);
+            }
+
+            while ((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
+                    bytes_written = write(1, buffer, bytes_read);
+                    if (bytes_written == -1) {
+                        perror("Error writing to STDOUT.");
+                        _exit(1);
+                    }
+            }
+
+            if (bytes_read == -1) {
+                perror("Error reading from pipe_to_client.");
+                _exit(1);
+            }
+
+            res = close(fd_read);
+            if (res == -1) {
+                perror("Error closing pipe_to_client.");
+                _exit(1);
+            }
+
+            res = close(fd_write);
+            if (res == -1) {
+                perror("Error closing pipe_to_server.");
+                _exit(1);
+            }
+        }
+        else {
+            perror("Error in the number of arguments.");
+            _exit(1);
+        }
     }
     else if (!strcmp(argv[1], "execute") && !strcmp(argv[2], "-p")) {
-        int num = tokenize(argv[3], store, "|");
-        char** new_store[num];
-        char dest[1024] = "";
-        for (int i=0; i<num; i++) {
-            new_store[i] = malloc(MAX_TOKENS * sizeof(char*));
-            tokenize(store[i], new_store[i], " ");
-            strcat(dest, new_store[i][0]);
-            if (i != num-1) 
-                strcat(dest, " | ");
+        if (argc == 4) {
+            int num = tokenize(argv[3], store, "|");
+            
+            char** new_store[num];
+            char dest[1024] = "";
+            
+            for (int i=0; i<num; i++) {
+                new_store[i] = malloc(MAX_TOKENS * sizeof(char*));
+                tokenize(store[i], new_store[i], " ");
+                strcat(dest, new_store[i][0]);
+                if (i != num-1) 
+                    strcat(dest, " | ");
+            }
+            pipeline(new_store, num, dest);
         }
-        pipeline(new_store, num, dest);
+        else {
+            perror("Error in the number of arguments.");
+            _exit(1);
+        }
     }
     else if (!strcmp(argv[1], "stats-time")) {
+        if (argc > 2) {
+            fd_write = open("pipe_to_server", O_WRONLY);
+            if (fd_write == -1) {
+                perror("Error opening pipe_to_server.");
+                _exit(1);
+            }
 
-        fd_write = open("pipe_to_server", O_WRONLY);
-        prog p;
-        strcpy(p.cmd, argv[1]);
-        
-        int i, j;
-        for(i=0; i<256; i++)
-            strcpy(p.args[i], "");
+            prog p;
+            strcpy(p.cmd, argv[1]);
 
-        for (i = 2, j = 0; i < argc; i++, j++) {
-            strcpy(p.args[j], argv[i]);
-            p.args[j][strlen(argv[i])] = '\0'; 
+            for(int i=0; i<256; i++)
+                strcpy(p.args[i], "");
+
+            for (int i = 2, j = 0; i < argc; i++, j++) {
+                strcpy(p.args[j], argv[i]);
+                p.args[j][strlen(argv[i])] = '\0'; 
+            }
+
+            bytes_written = write(fd_write, &p, sizeof(struct prog));
+            if (bytes_written == -1) {
+                perror("Error writing to pipe_to_server.");
+                _exit(1);
+            }
+
+            res = close(fd_write);
+            if (res == -1) {
+                perror("Error closing pipe_to_server.");
+                _exit(1);
+            }
+
+            fd_read = open("pipe_to_client", O_RDONLY);
+            if (fd_read == -1) {
+                perror("Error opening pipe_to_client.");
+                _exit(1);
+            }
+
+            char buffer[10];
+            bytes_read = read(fd_read, &buffer, sizeof(buffer));
+            if (bytes_read == -1) {
+                perror("Error reading from pipe_to_client.");
+                _exit(1);
+            }
+
+            bytes_written = write(1, buffer, bytes_read);
+            if (bytes_written == -1) {
+                perror("Error writing to STDOUT.");
+                _exit(1);
+            }
+
+            res = close(fd_read);
+            if (res == -1) {
+                perror("Error closing pipe_to_client.");
+                _exit(1);
+            }
         }
-
-        write(fd_write, &p, sizeof(struct prog));
-
-        close(fd_write);
-
-        fd_read = open("pipe_to_client", O_RDONLY);
-        char buffer[10];
-        int bytes_read = read(fd_read, &buffer, sizeof(buffer));
-        write(1, buffer, bytes_read);
-        close(fd_read);
+        else {
+            perror("Error in the number of arguments.");
+            _exit(1);
+        }
     }
     else if (!strcmp(argv[1], "stats-command")) {
+        if (argc > 3) {
+            fd_write = open("pipe_to_server", O_WRONLY);
+            prog p;
 
-        fd_write = open("pipe_to_server", O_WRONLY);
-        prog p;
+            strcpy(p.cmd, argv[1]);
 
-        strcpy(p.cmd, argv[1]);
+            for(int i=0; i<256; i++)
+                strcpy(p.args[i], "");
 
-        int i, j;
-        for(i=0; i<256; i++)
-            strcpy(p.args[i], "");
+            strcpy(p.args[0], argv[2]);
 
-        strcpy(p.args[0], argv[2]);
+            for (int i = 3, j = 1; i < argc; i++, j++) {
+                strcpy(p.args[j], argv[i]);
+                p.args[j][strlen(argv[i])] = '\0'; 
+            }
 
-        for (i = 3, j = 1; i < argc; i++, j++) {
-            strcpy(p.args[j], argv[i]);
-            p.args[j][strlen(argv[i])] = '\0'; 
+            bytes_written = write(fd_write, &p, sizeof(struct prog));
+            if (bytes_written == -1) {
+                perror("Error writing to pipe_to_server");
+            }
+
+            res = close(fd_write);
+            if (res == -1) {
+                perror("Error closing pipe_to_server.");
+            }
+
+            fd_read = open("pipe_to_client", O_RDONLY);
+            if (fd_read == -1) {
+                perror("Error opening pipe_to_client.");
+                _exit(1);
+            }
+
+            char buffer[10];
+            bytes_read = read(fd_read, &buffer, sizeof(buffer));
+            if (bytes_read == -1) {
+                perror("Error reading from pipe_to_client.");
+                _exit(1);
+            }
+
+            bytes_written = write(1, buffer, bytes_read);
+            if (bytes_written == -1) {
+                perror("Error writing to STDOUT.");
+                _exit(1);
+            }
+
+            res = close(fd_read);
+            if (res == -1) {
+                perror("Error closing pipe_to_client.");
+                _exit(1);
+            }
         }
-
-        write(fd_write, &p, sizeof(struct prog));
-
-        close(fd_write);
-
-        fd_read = open("pipe_to_client", O_RDONLY);
-        char buffer[10];
-        int bytes_read = read(fd_read, &buffer, sizeof(buffer));
-        write(1, buffer, bytes_read);
-        close(fd_read);
     }
     else if (!strcmp(argv[1], "stats-uniq")) {
-        
-        fd_write = open("pipe_to_server", O_WRONLY);
-        prog p;
+        if (argc > 2) {
+            fd_write = open("pipe_to_server", O_WRONLY);
+            if (fd_write == -1) {
+                perror("Error opening pipe_to_server.");
+                _exit(1);
+            }
 
-        strcpy(p.cmd, argv[1]);
+            prog p;
 
-        for(int i=0; i<256; i++)
-            strcpy(p.args[i], "");
+            strcpy(p.cmd, argv[1]);
 
-        strcpy(p.args[0], argv[2]);
+            for(int i=0; i<256; i++)
+                strcpy(p.args[i], "");
 
-        for (int i = 3, j = 1; i < argc; i++, j++) {
-            strcpy(p.args[j], argv[i]);
-            p.args[j][strlen(argv[i])] = '\0'; 
+            strcpy(p.args[0], argv[2]);
+
+            for (int i = 3, j = 1; i < argc; i++, j++) {
+                strcpy(p.args[j], argv[i]);
+                p.args[j][strlen(argv[i])] = '\0'; 
+            }
+
+            bytes_written = write(fd_write, &p, sizeof(struct prog));
+            if (bytes_written == -1) {
+                perror("Error writing to pipe_to_server.");
+                _exit(1);
+            }
+
+            res = close(fd_write);
+            if (res == -1) {
+                perror("Error closing pipe_to_server.");
+                _exit(1);
+            }
+
+            fd_read = open("pipe_to_client", O_RDONLY);
+            if (fd_read == -1) {
+                perror("Error opening pipe_to_client.");
+                _exit(1);
+            }
+
+            while((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
+                bytes_written = write(1, buffer, bytes_read);
+                if (bytes_written == -1) {
+                    perror("Error writing to STDOUT.");
+                    _exit(1);
+                }
+            }
+
+            if (bytes_read == -1) {
+                perror("Error reading from pipe_to_client.");
+                _exit(1);
+            }
+
+            res = close(fd_read);
+            if (res == -1) {
+                perror("Error closing pipe_to_client.");
+                _exit(1);
+            }
         }
 
-        write(fd_write, &p, sizeof(struct prog));
+    }
+    else if (!strcmp(argv[1], "kill")) {
+        if (argc == 2) {
+            prog p;
+            strcpy(p.cmd, argv[1]);
 
-        close(fd_write);
+            fd_write = open("pipe_to_server", O_WRONLY);
+            if (fd_write == -1) {
+                perror("Error opening pipe_to_server.");
+                _exit(1);
+            }
 
-        fd_read = open("pipe_to_client", O_RDONLY);
+            bytes_written = write(fd_write, &p, sizeof(struct prog));
+            if (bytes_written == -1) {
+                perror("Error writing to pipe_to_server.");
+                _exit(1);
+            }
 
-        while((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
-            write(1, buffer, bytes_read);
+            res = close(fd_write);
+            if (res == -1) {
+                perror("Error closing pipe_to_server.");
+                _exit(1);
+            }
         }
-
-        close(fd_read);
-
+        else {
+            perror("Error in the number of arguments.");
+            _exit(1);
+        }
+    }
+    else {
+        perror("Error invalid option.");
+        _exit(1);
     }
 
     return 0;

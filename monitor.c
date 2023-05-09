@@ -349,6 +349,9 @@ int main(int argc, char** argv) {
             else if (!strcmp(buffer.cmd, "stats-uniq")) {
                 stats_uniq(buffer.args, argv[1]);
             }
+            else if (!strcmp(buffer.cmd, "kill")) {
+                break;
+            }
             else {
                 int flag = 0, pos;
                 for(int j=0; j<=i; j++) { 
