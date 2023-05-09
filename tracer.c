@@ -33,100 +33,210 @@ int tokenize(char* comando, char **store, char* sep) {
 }
 
 void execute(char **comand, char* cmd) {
-    int ret, status, fd, fd_pai[2];
+    int ret, res, bytes_written, bytes_read, status, fd, fd_pai[2];
     pid_t pid;
 
     struct prog servidor, pai, buffer;
 
-    pipe(fd_pai);
+    res = pipe(fd_pai);
+    if (res == -1)
+        perror("Error creating pipe_to_parent.");
+
     pid = fork();
-    if (pid == 0)
-    {
+    if (pid == 0) {
         struct timeval tv1;
 
         fd = open("pipe_to_server", O_WRONLY);
+        if (fd == -1) {
+            perror("Error opening pipe_to_server.");
+            _exit(1);
+        }
 
-        close(fd_pai[0]); 
+        res = close(fd_pai[0]); 
+        if (res == -1) {
+            perror("Error closing reading file descriptor of pipe_to_parent.");
+            _exit(1);
+        }
 
         pid_t child_pid;
         child_pid = getpid();
+        if (child_pid == -1) {
+            perror("Error getting the child PID.");
+            _exit(1);
+        }
 
         char str[32];
-        int len = snprintf(str, sizeof(str), "Running PID %d\n", child_pid);
-        write(1, str, len);
+        res = snprintf(str, sizeof(str), "Running PID %d\n", child_pid);
+        if (res < 0) {
+            perror("Error formatting string.");
+            _exit(1);
+        }
+        
+        bytes_written = write(1, str, res);
+        if (bytes_written == -1)
+            perror("Error writing to STDOUT.");
 
         pai.pid = child_pid;
         servidor.pid = child_pid;
 
         strcpy(servidor.cmd, cmd);
 
-        gettimeofday(&tv1, NULL);      
+        res = gettimeofday(&tv1, NULL);      
+        if (res == -1) {
+            perror("Error getting time of day.");
+            _exit(1);
+        }
         
         servidor.start = tv1;
         pai.start = tv1;
 
-        write(fd_pai[1], &pai, sizeof(pai));
-        write(fd, &servidor, sizeof(struct prog));
+        bytes_written = write(fd_pai[1], &pai, sizeof(pai));
+        if (bytes_written == -1)
+            perror("Error writing to pipe_to_parent.");
+
+        bytes_written = write(fd, &servidor, sizeof(struct prog));
+        if (bytes_written == -1)
+            perror("Error writing to pipe_to_server.");
        
-        close(fd);
-        close(fd_pai[1]);
+        res = close(fd);
+        if (res == -1)
+            perror("Error closing pipe_to_server.");
+
+        res = close(fd_pai[1]);
+        if (res == -1)
+            perror("Error closing pipe_to_parent.");
 
         ret = execvp(comand[0], comand);
-        if (ret == -1)
-        {
-            perror("execvp");
-            exit(EXIT_FAILURE);
+        if (ret == -1) {
+            perror("Error executing execvp.");
+            exit(1);
         }
     }
     else
     {
-        waitpid(pid, &status, 0);
+        res = waitpid(pid, &status, 0);
+        if (res == -1) {
+            perror("Error executing waitpid.");
+            _exit(1);
+        }
+
         if (WIFEXITED(status)) {
             struct timeval end;
             
-            gettimeofday(&end, NULL);
+            res = gettimeofday(&end, NULL);
+            if (res == -1) {
+                perror("Error getting time of day.");
+                _exit(1);
+            }
 
-            close(fd_pai[1]);
+            res = close(fd_pai[1]);
+            if (res == -1) {
+                perror("Error closing writing file descriptor of pipe_to_parent");
+                _exit(1);
+            }
 
             fd = open("pipe_to_server", O_WRONLY);
+            if (fd == -1) {
+                perror("Error opening pipe_to_server.");
+                _exit(1);
+            }
             
-            int bytes_read = read(fd_pai[0], &buffer, sizeof(buffer));
+            bytes_read = read(fd_pai[0], &buffer, sizeof(buffer));
+            if (bytes_read == 0) {
+                perror("Error reading from pipe_to_parent.");
+                _exit(1);
+            }
+
             servidor.pid = buffer.pid;
                         
             int diff = (end.tv_usec-buffer.start.tv_usec)/1000 + (end.tv_sec-buffer.start.tv_sec)*1000;
             char str[32];
-            snprintf(str, sizeof(str), "Ended in %d ms\n", diff);
-            write(1, str, strlen(str)); 
+            res = snprintf(str, sizeof(str), "Ended in %d ms\n", diff);
+            if (res < 0) {
+                perror("Error formatting string.");
+                _exit(1);
+            }
+
+            bytes_written = write(1, str, strlen(str)); 
+            if (bytes_written == 0) {
+                perror("Error writing to STDOUT.");
+            }
 
             servidor.ms = diff;
-            write(fd, &servidor, sizeof(struct prog));
+            bytes_written = write(fd, &servidor, sizeof(struct prog));
+            if (bytes_written == 0) {
+                perror("Error writing to pipe_to_server.");
+                _exit(1);
+            }
         }
-        close(fd);
-        close(fd_pai[0]);
+
+        res = close(fd);
+        if (res == -1) {
+            perror("Error closing pipe_to_server.");
+            _exit(1);
+        }
+
+        res = close(fd_pai[0]);
+        if (res == -1) {
+            perror("Error closing reading file descriptor of pipe_to_parent.");
+            _exit(1);
+        }
     }
 }
 
 void pipeline(char** store[], int num, char* cmd) {
 
+    int res, fd, bytes_written;
     int pipes[num-1][2];
     int status[num];
 
-    int fd = open("pipe_to_server", O_WRONLY);
+    fd = open("pipe_to_server", O_WRONLY);
+    if (fd == -1) {
+        perror("Error opening pipe_to_server.");
+        _exit(1);
+    }
+
     prog p;
     p.pid = getpid();
+    if (p.pid == -1) {
+        perror("Error getting PID.");
+        _exit(1);
+    }
     strcpy(p.cmd, cmd);
 
     char str[64];
-    snprintf(str, sizeof(str), "Running PID %d\n", p.pid);
-    write(1, str, strlen(str));
+    res = snprintf(str, sizeof(str), "Running PID %d\n", p.pid);
+    if (res < 0) {
+        perror("Error formatting string.");
+        _exit(1);
+    }
+
+    bytes_written = write(1, str, strlen(str));
+    if (bytes_written == -1) {
+        perror("Error writing to STDOUT.");
+        _exit(1);
+    }
 
     struct timeval start, end;
-    gettimeofday(&start, NULL);
+    res = gettimeofday(&start, NULL);
+    if (res == -1) {
+        perror("Error getting time of day.");
+        _exit(1);
+    }
+
     p.start = start;
 
-    write(fd, &p, sizeof(p));
+    bytes_written = write(fd, &p, sizeof(p));
+    if (bytes_written == -1) {
+        perror("Error writing to pipe_to_server.");
+        _exit(1);
+    }
 
-    pipe(pipes[0]);
+    res = pipe(pipes[0]);
+    if (res == -1) {
+        perror("Error creating pipe.");
+        _exit(1);
+    }
 
     if (fork()==0) {
         close(pipes[0][0]);
