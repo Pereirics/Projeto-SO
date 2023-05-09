@@ -13,100 +13,157 @@
 
 void status(struct prog store[], int N) {
 
+    int res, bytes_written;
     struct timeval now;
-    gettimeofday(&now, NULL);
+    
+    res = gettimeofday(&now, NULL);
+    if (res == -1)
+        perror("Error getting time of day.");
 
-    int fd = open("pipe1", O_WRONLY);
+    int fd = open("pipe_to_client", O_WRONLY);
+    if (fd == -1)
+        perror("Error opening pipe_to_client.");
    
     for(int i=0; i<N; i++) {
         long diff = (now.tv_usec-store[i].start.tv_usec)/1000 + (now.tv_sec-store[i].start.tv_sec)*1000;
         char str[32];
-        int len = snprintf(str, sizeof(str), "%d %s %ld ms\n", store[i].pid, store[i].cmd, diff);
-        write(fd, str, len);
+
+        res = snprintf(str, sizeof(str), "%d %s %ld ms\n", store[i].pid, store[i].cmd, diff);
+        if (res < 0)
+            perror("Error formating string.");
+        
+        bytes_written = write(fd, str, res);
+        if (bytes_written == -1)
+            perror("Error writing to client.");
+
     }
 
-    close(fd);
+    res = close(fd);
+    if (res == -1)
+        perror("Error closing pipe_to_client.");
 
 }
 
 void stats_time(char args[][7], char* folder) {
 
-    int fd, bytes_read;
+    int fd, bytes_read, bytes_written, res, pos;
     char str[64];
     char buffer[100] = "";
     int total = 0;
 
     for(int i=0; i<256 && strcmp(args[i], "") != 0; i++) {
         str[64];
-        snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
-        fd = open(str, O_RDONLY);
-        char c;
-        bytes_read=0;
+        res = snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
+        if (res < 0)
+            perror("Error formatting string.");
 
-        while(read(fd, &c, sizeof(c)) == 1){
-            buffer[bytes_read++] = c;
+        fd = open(str, O_RDONLY);
+        if (fd == -1)
+            perror("Error opening file with PID name.");
+        
+        char c;
+        pos=0;
+
+        while((bytes_read = read(fd, &c, sizeof(c))) == 1){
+            buffer[pos++] = c;
             if (c == '\n')
                 break;
         }
+
+        if (bytes_read == -1)
+            perror("Error reading from file with PID name.");
+
         total += atoi(buffer);
+
+        res = close(fd);
+        if (res == -1)
+            perror("Error closing the file with PID name.");
     }
 
-    close(fd);
+    fd = open("pipe_to_client", O_WRONLY);
+    if (fd == -1)
+        perror("Error opening pipe_to_client.");
 
-    fd = open("pipe1", O_WRONLY);
+    str[10];
+    res = snprintf(str, sizeof(str), "%d\n", total);
+    if (res < 0)
+        perror("Error formatting string.");
+    
+    bytes_written = write(fd, str, strlen(str)); 
+    if (bytes_written == -1)
+        perror("Error writinf to client.");
 
-    char res[10];
-    snprintf(str, sizeof(str), "%d\n", total);
-    write(fd, str, strlen(str)); 
-
-    close(fd);
+    res = close(fd);
+    if (res == -1)
+        perror("Error closing pipe_to_client.");
 }
+
 
 void stats_command(char* cmd, char args[][7], char* folder) {
 
-    int fd;
+    int fd, res, pos;
     char c, str[64];
     char buffer[100] = "";
-    int bytes_read = 0, total = 0;
+    int bytes_written, bytes_read = 0, total = 0;
 
     for(int i=0; i<255 && strcmp(args[i], "") != 0; i++) {
         str[64];
-        snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
-        fd = open(str, O_RDONLY);
-        
-        bytes_read=0;
+        res = snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
+        if (res < 0)
+            perror("Error formatting string.");
 
-        while(read(fd, &c, sizeof(c)) == 1){
+        fd = open(str, O_RDONLY);
+        if (fd == -1)
+            perror("Error opening the file with PID name.");
+        
+        pos=0;
+
+        while((bytes_read = read(fd, &c, sizeof(c))) == 1){
             if (c != '\n' && c != ' ') {
-                buffer[bytes_read++] = c;
+                buffer[pos++] = c;
             }
             else {    
-                buffer[bytes_read] = '\0';
+                buffer[pos] = '\0';
                 if (!strcmp(buffer, cmd)) { 
                     total++;
                 }
                 strcpy(buffer, "");
-                bytes_read = 0;
+                pos = 0;
             }
         }
-        close(fd);
+
+        if (bytes_read == -1)
+            perror("Error reading from file with PID name.");
+
+        res = close(fd);
+        if (res == -1)
+            perror("Error closing file with pid name.");
     }
 
-    fd = open("pipe1", O_WRONLY);
+    fd = open("pipe_to_client", O_WRONLY);
+    if (fd == -1)
+        perror("Error opening pipe_to_client.");
 
-    char res[10];
-    snprintf(res, sizeof(res), "%d\n", total);
-    write(fd, res, strlen(res)); 
+    str[10];
+    res = snprintf(str, sizeof(str), "%d\n", total);
+    if (res < 0)
+        perror("Error formatting string.");
 
-    close(fd);
+    bytes_written = write(fd, str, strlen(str)); 
+    if (bytes_written == -1)
+        perror("Error writing to client.");
+
+    res = close(fd);
+    if (res == -1)
+        perror("Error closing pipe_to_client.");
 }
 
 void stats_uniq(char args[][7], char* folder) {
 
-    int fd;
+    int fd, res, bytes_written;
     char c, str[64];
     char buffer[100] = "";
-    int total = 0, pos = 0, bytes_read=0, linha, flag_args = 0;
+    int total = 0, pos=0, pos_store = 0, bytes_read=0, linha, flag_args = 0;
     char store[100][20];
 
     for (int i=0; i<100; i++) {
@@ -115,40 +172,44 @@ void stats_uniq(char args[][7], char* folder) {
 
     for(int i=0; i<256 && strcmp(args[i], "") != 0; i++) {
         str[64];
-        snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
+        res = snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
+        if (res < 0)
+            perror("Error formatting string.");
+
         fd = open(str, O_RDONLY);
-        
+        if (fd == -1)
+            perror("Error opening file with PID name.");
+
         strcpy(buffer, "");
 
         linha = 0;
 
-        while(read(fd, &c, sizeof(c)) == 1){
+        while((bytes_read = read(fd, &c, sizeof(c))) == 1){
             if (c != '\n' && c != ' ') {
-                buffer[bytes_read++] = c;
+                buffer[pos++] = c;
             }
             else if (c == '\n' && linha < 1) {
                 linha++;
                 strcpy(buffer, "");
-                bytes_read = 0;
+                pos = 0;
             }
             else if (linha >= 1 && !flag_args){    
-                buffer[bytes_read] = '\0';
-                for (int i=0; i<=pos; i++) {
-                    if (pos > 0 && !strcmp(buffer, store[i])) {
+                buffer[pos] = '\0';
+                for (int i=0; i<=pos_store; i++) {
+                    if (pos_store > 0 && !strcmp(buffer, store[i])) {
                         strcpy(buffer, "");
-                        bytes_read = 0;
+                        pos = 0;
                         break;
                     }
-                    else if (pos == 0 || (i == pos && strcmp(buffer, store[i]) != 0)) {
-                        strcpy(store[pos++], buffer); 
-                        printf("%s\n", store[pos-1]);
+                    else if (pos_store == 0 || (i == pos_store && strcmp(buffer, store[i]) != 0)) {
+                        strcpy(store[pos_store++], buffer); 
                         strcpy(buffer, "");
-                        bytes_read = 0;
+                        pos = 0;
                         break;
                     }
                 }
                 strcpy(buffer, "");
-                bytes_read = 0;
+                pos = 0;
             }
 
             if (c == ' ') 
@@ -157,32 +218,55 @@ void stats_uniq(char args[][7], char* folder) {
                 flag_args = 0;
         }
 
+        if (bytes_read == -1)
+            perror("Error reading from file with PID name.");
+
         strcpy(buffer, "");
-        bytes_read = 0;
+        pos = 0;
 
-        close(fd);
+        res = close(fd);
+        if (res == -1)
+            perror("Error closing file with PID name.");
     }
 
-    fd = open("pipe1", O_WRONLY);
+    fd = open("pipe_to_client", O_WRONLY);
+    if (fd == -1)
+        perror("Error opening pipe_to_client.");
 
-    for(int i=0; i<pos; i++) {
-        write(fd, store[i], strlen(store[i]));
-        write(fd, "\n", 1);
+
+    for(int i=0; i<pos_store; i++) {
+        bytes_written = write(fd, store[i], strlen(store[i]));
+        if (bytes_written == -1)
+            perror("Error writting to client.");
+        
+        bytes_written = write(fd, "\n", 1);
+        if (bytes_written == -1)
+            perror("Error writing to client.");
     }
 
-    close(fd);
+    res = close(fd);
+    if (res == -1)
+        perror("Error closing pipe_to_client.");
 }
 
 int main(int argc, char** argv) {
 
-    int res_fifo, res1_fifo, fd_read, fd_write, fd_pids, bytes_read, i=0;
+    int res, fd_read, fd_write, fd_pids, bytes_read, bytes_written, i=0;
     prog buffer, store[100];
 
-    res_fifo = mkfifo("pipe", 0666); 
-    res1_fifo = mkfifo("pipe1", 0666);
+    if(mkfifo("pipe_to_server", 0666) == -1)
+        perror("Error creating fifo that connects to server."); 
+    
+    if(mkfifo("pipe_to_client", 0666) == -1)
+        perror("Error creating fifo that connects to client.");
 
-    fd_read = open("pipe", O_RDONLY);
-    fd_write = open("pipe", O_WRONLY); // Mantém o servidor a correr    
+    fd_read = open("pipe_to_server", O_RDONLY);
+    if (fd_read == -1)
+        perror("Error opening pipe_to_server.");
+    
+    fd_write = open("pipe_to_server", O_WRONLY); // Mantém o servidor a correr    
+    if (fd_write == -1)
+        perror("Error opening pipe_to_server");
     
     while ((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
         if (!strcmp(buffer.cmd, "status")) {
@@ -204,14 +288,21 @@ int main(int argc, char** argv) {
                     char file[64];
                     snprintf(file, sizeof(file), "%s/%d.txt", argv[1], store[j].pid);
                     int fd_pids = open(file, O_CREAT | O_WRONLY, 0666);
+                    if (fd_pids == -1)
+                        perror("Error opening/creating the file with the PID name.");
                     
                     char str1[128];
                     snprintf(str1, sizeof(str1), "%d\n", buffer.ms);
-                    write(fd_pids, str1, strlen(str1));
+                    bytes_written = write(fd_pids, str1, strlen(str1));
+                    if (bytes_written == -1)
+                        perror("Error writing to the file with the PID name.");
+
 
                     char str2[260];
                     snprintf(str2, sizeof(str2), "%s\n",store[j].cmd);
-                    int a = write(fd_pids, str2, strlen(str2));
+                    bytes_written = write(fd_pids, str2, strlen(str2));
+                    if (bytes_written == -1)
+                        perror("Error writing to the file with the PID name.");
                     
                     close(fd_pids);
 
@@ -228,11 +319,23 @@ int main(int argc, char** argv) {
         }
     }   
 
-    close(fd_read);
-    close(fd_write);
+    if (bytes_read == -1)
+        perror("Error reading from client.");
 
-    unlink("pipe");
-    unlink("pipe1");
+    res = close(fd_read);
+    if (res == -1)
+        perror("Error closing fd_read.");
+    res = close(fd_write);
+    if (res == -1)
+        perror("Error closing fd_write.");
+    
+
+    res = unlink("pipe_to_server");
+    if (res == -1)
+        perror("Error deleting pipe_to_server.");
+    res = unlink("pipe_to_client");
+    if (res == -1)
+        perror("Error deleting pipe_to_client.");
 
     return 0;
 }

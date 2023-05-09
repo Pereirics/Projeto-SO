@@ -44,7 +44,7 @@ void execute(char **comand, char* cmd) {
     {
         struct timeval tv1;
 
-        fd = open("pipe", O_WRONLY);
+        fd = open("pipe_to_server", O_WRONLY);
 
         close(fd_pai[0]); 
 
@@ -88,7 +88,7 @@ void execute(char **comand, char* cmd) {
 
             close(fd_pai[1]);
 
-            fd = open("pipe", O_WRONLY);
+            fd = open("pipe_to_server", O_WRONLY);
             
             int bytes_read = read(fd_pai[0], &buffer, sizeof(buffer));
             servidor.pid = buffer.pid;
@@ -111,7 +111,7 @@ void pipeline(char** store[], int num, char* cmd) {
     int pipes[num-1][2];
     int status[num];
 
-    int fd = open("pipe", O_WRONLY);
+    int fd = open("pipe_to_server", O_WRONLY);
     prog p;
     p.pid = getpid();
     strcpy(p.cmd, cmd);
@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[1], "status")) {
         strcpy(st.cmd, argv[1]);
         write(fd_write, &st, sizeof(st));
-        fd_read = open("pipe1", O_RDONLY);
+        fd_read = open("pipe_to_client", O_RDONLY);
         while ((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
                 write(1, buffer, bytes_read);
             }
@@ -220,7 +220,7 @@ int main(int argc, char **argv) {
     }
     else if (!strcmp(argv[1], "stats-time")) {
 
-        fd_write = open("pipe", O_WRONLY);
+        fd_write = open("pipe_to_server", O_WRONLY);
         prog p;
         strcpy(p.cmd, argv[1]);
         
@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
 
         close(fd_write);
 
-        fd_read = open("pipe1", O_RDONLY);
+        fd_read = open("pipe_to_client", O_RDONLY);
         char buffer[10];
         int bytes_read = read(fd_read, &buffer, sizeof(buffer));
         write(1, buffer, bytes_read);
@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
     }
     else if (!strcmp(argv[1], "stats-command")) {
 
-        fd_write = open("pipe", O_WRONLY);
+        fd_write = open("pipe_to_server", O_WRONLY);
         prog p;
 
         strcpy(p.cmd, argv[1]);
@@ -265,7 +265,7 @@ int main(int argc, char **argv) {
 
         close(fd_write);
 
-        fd_read = open("pipe1", O_RDONLY);
+        fd_read = open("pipe_to_client", O_RDONLY);
         char buffer[10];
         int bytes_read = read(fd_read, &buffer, sizeof(buffer));
         write(1, buffer, bytes_read);
@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
     }
     else if (!strcmp(argv[1], "stats-uniq")) {
         
-        fd_write = open("pipe", O_WRONLY);
+        fd_write = open("pipe_to_server", O_WRONLY);
         prog p;
 
         strcpy(p.cmd, argv[1]);
@@ -292,7 +292,7 @@ int main(int argc, char **argv) {
 
         close(fd_write);
 
-        fd_read = open("pipe1", O_RDONLY);
+        fd_read = open("pipe_to_client", O_RDONLY);
 
         while((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
             write(1, buffer, bytes_read);
