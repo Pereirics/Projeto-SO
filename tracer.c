@@ -112,8 +112,11 @@ void execute(char **comand, char* cmd) {
             exit(1);
         }
     }
-    else
-    {
+    else if (pid == -1) {
+        perror("Erro no fork.");
+        _exit(1);
+    }
+    else {
         res = waitpid(pid, &status, 0);
         if (res == -1) {
             perror("Error executing waitpid.");
@@ -186,7 +189,7 @@ void execute(char **comand, char* cmd) {
 
 void pipeline(char** store[], int num, char* cmd) {
 
-    int res, fd, bytes_written;
+    int res, fd, bytes_written, pid;
     int pipes[num-1][2];
     int status[num];
 
@@ -238,59 +241,169 @@ void pipeline(char** store[], int num, char* cmd) {
         _exit(1);
     }
 
-    if (fork()==0) {
-        close(pipes[0][0]);
-        dup2(pipes[0][1], 1);
-        close(pipes[0][1]);
+    for (int i=0; i<num; i++) {
 
-        execvp(store[0][0], store[0]);
+        if (i==0) {
+            res = pipe(pipes[i]);
+            if (res == -1) {
+                perror("Error creating the pipe.");
+                _exit(1);
+            }
+            if ((pid = fork())==0) {
+                res = close(pipes[i][0]);
+                if (res == -1) {
+                    perror("Error closing the reading file descriptor of the pipe.");
+                    _exit(1);
+                }
+
+                int res = dup2(pipes[i][1], 1);
+                if (res == -1) {
+                    perror("Erro executing dup.");
+                    _exit(1);
+                }
+
+                res = close(pipes[i][1]);
+                if (res == -1) {
+                    perror("Error closing the writing file descriptor of the pipe.");
+                    _exit(1);
+                }
+
+                res = execvp(store[i][0], store[i]);
+                if (res == -1) {
+                    perror("Erro executing execvp.");
+                    _exit(1);
+                }
+            }
+            else if (pid == -1){
+                perror("Error executing fork.");
+                _exit(1);
+            }
+            else {
+                res = close(pipes[i][1]);
+                if (res == -1) {
+                    perror("Error closing the writing file descriptor of the pipe.");
+                    _exit(1);
+                }
+            }
+        }
+        else if (i==num-1) {
+            if ((pid = fork()) == 0) {
+                res = dup2(pipes[i-1][0], 0);
+                if (res == -1) {
+                    perror("Error executing dup.");
+                    _exit(1);
+                }
+
+                res = close(pipes[i-1][0]);
+                if (res == -1) {
+                    perror("Error closing the reading file descriptor of the pipe.");
+                    _exit(1);
+                }
+
+                res = execvp(store[i][0], store[i]);
+                if (res == -1) {
+                    perror("Error executing execvp.");
+                    _exit(1);
+                }
+            }
+            else if(pid == -1) {
+                perror("Error executing fork.");
+                _exit(1);
+            }
+            else
+                res = close(pipes[i-1][0]);
+                if (res == -1) {
+                    perror("Error closing the reading file descriptor of the pipe.");
+                    _exit(1);
+                }
+        }
+        else {
+            res = pipe(pipes[i]);
+            if (res == -1) {
+                perror("Error creating pipe.");
+                _exit(1);
+            }
+
+            if ((pid = fork()) == 0) {
+                close(pipes[i][0]);
+
+                int res=dup2(pipes[i-1][0], 0);
+                if (res == -1) {
+                    perror("Error executing dup.");
+                    _exit(1);
+                }
+
+                res = close(pipes[i-1][0]);
+                if (res == -1) {
+                    perror("Error closing the reading file descriptor of the pipe.");
+                    _exit(1);
+                }
+
+                res = dup2(pipes[i][1], 1);
+                if (res == -1)
+                    perror("Error executing dup.");
+                close(pipes[i][1]);
+
+                res=execvp(store[i][0], store[i]);
+                if (res == -1) {
+                    perror("Error executing execvp.");
+                    _exit(1);
+                }
+            }
+            else if(pid == -1) {
+                perror("Error executing fork.");
+            }
+
+            res = close(pipes[i][1]);
+            if (res == -1) {
+                perror("Error closing the writing file descriptor of the pipe.");
+                _exit(1);
+            }
+            
+            res = close(pipes[i-1][0]);
+            if (res == -1) {
+                perror("Error closing the reading file descriptor of the pipe.");
+            }
+        }
     }
-    
-    for (int i=1; i<num-1; i++) {
-        close(pipes[i-1][1]);
-        pipe(pipes[i]);
-        
-        if (fork() == 0) {
-            close(pipes[i][0]);
-
-            dup2(pipes[i-1][0], 0);
-            close(pipes[i-1][0]);
-
-            dup2(pipes[i][1], 1);
-            close(pipes[i][1]);
-
-            execvp(store[i][0], store[i]);
-       }
-
-       close(pipes[i][1]);
-       close(pipes[i-1][0]);
-    }
-
-    if (fork() == 0) {
-        close(pipes[num-2][1]);
-
-        dup2(pipes[num-2][0], 0);
-        close(pipes[num-2][0]);
-
-        execvp(store[num-1][0], store[num-1]);
-    }
-
-    close(pipes[num-2][0]);
 
     for (int i=0; i<num; i++) {
-        wait(&status[i]);
+        res = wait(&status[i]);
+        if (res == -1) {
+            perror("Error executing wait.");
+            _exit(1);
+        }
     }
 
-    gettimeofday(&end, NULL);
+    res = gettimeofday(&end, NULL);
+    if (res == -1) {
+        perror("Error getting time of day.");
+        _exit(1);
+    }
 
     int diff = (end.tv_usec-start.tv_usec)/1000 + (end.tv_sec-start.tv_sec)*1000;
-    snprintf(str, sizeof(str), "Ended in %d ms\n", diff);
-    write(1, str, strlen(str));
+    res = snprintf(str, sizeof(str), "Ended in %d ms\n", diff);
+    if (res == -1) {
+        perror("Error formatting string.");
+        _exit(1);
+    }
+    
+    bytes_written = write(1, str, strlen(str));
+    if (bytes_written == -1) {
+        perror("Error writing to STDOUT.");
+        _exit(1);
+    }
 
     p.ms = diff;
-    write(fd, &p, sizeof(p));
+    bytes_written = write(fd, &p, sizeof(p));
+    if (bytes_written == -1) {
+        perror("Error writing to pipe_to_server.");
+    }
 
-    close(fd);
+    res = close(fd);
+    if (res == -1) {
+        perror("Error closing pipe_to_server.");
+    }
 }
 
 
@@ -302,9 +415,15 @@ int main(int argc, char **argv) {
     struct prog st;
 
     if (!strcmp(argv[1], "execute") && !strcmp(argv[2], "-u")) {
-        strcpy(cmd, argv[3]);
-        tokenize(argv[3], store, " ");
-        execute(store, cmd);
+        if (argc == 4) {
+            strcpy(cmd, argv[3]);
+            tokenize(argv[3], store, " ");
+            execute(store, cmd);
+        }
+        else {
+            perror("Error in the number of arguments.");
+            _exit(1);
+        }
     }
     else if (!strcmp(argv[1], "status")) {
         strcpy(st.cmd, argv[1]);
