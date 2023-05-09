@@ -7,17 +7,9 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <sys/time.h>
+#include "prog.h"
 
 #define MAX_TOKENS 1000
-
-typedef struct prog 
-{
-    int pid;
-    char cmd[256];
-    char args[256][7];
-    struct timeval start;
-    int ms;
-} prog;
 
 void status(struct prog store[], int N) {
 
@@ -37,26 +29,25 @@ void status(struct prog store[], int N) {
 
 }
 
-void stats_time(int args[], char* folder) {
+void stats_time(char args[][7], char* folder) {
 
     int fd, bytes_read;
     char str[64];
     char buffer[100] = "";
     int total = 0;
 
-    for(int i=0; i<256 && args[i] != 0; i++) {
+    for(int i=0; i<256 && strcmp(args[i], "") != 0; i++) {
         str[64];
-        snprintf(str, sizeof(str), "%s%d.txt", folder, args[i]);
+        snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
         fd = open(str, O_RDONLY);
         char c;
-        int bytes_read=0;
+        bytes_read=0;
 
         while(read(fd, &c, sizeof(c)) == 1){
             buffer[bytes_read++] = c;
             if (c == '\n')
                 break;
         }
-
         total += atoi(buffer);
     }
 
@@ -71,20 +62,19 @@ void stats_time(int args[], char* folder) {
     close(fd);
 }
 
-void stats_command(char* cmd, int args[], char* folder) {
+void stats_command(char* cmd, char args[][7], char* folder) {
 
     int fd;
-    char str[64];
+    char c, str[64];
     char buffer[100] = "";
-    int total = 0;
+    int bytes_read = 0, total = 0;
 
-    for(int i=0; i<255 && args[i] != 0; i++) {
+    for(int i=0; i<255 && strcmp(args[i], "") != 0; i++) {
         str[64];
-        snprintf(str, sizeof(str), "%s%d.txt", folder, args[i]);
+        snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
         fd = open(str, O_RDONLY);
         
-        char c;
-        int bytes_read=0;
+        bytes_read=0;
 
         while(read(fd, &c, sizeof(c)) == 1){
             if (c != '\n' && c != ' ') {
@@ -99,7 +89,6 @@ void stats_command(char* cmd, int args[], char* folder) {
                 bytes_read = 0;
             }
         }
-
         close(fd);
     }
 
@@ -112,45 +101,47 @@ void stats_command(char* cmd, int args[], char* folder) {
     close(fd);
 }
 
-void stats_uniq(int args[], char* folder) {
+void stats_uniq(char args[][7], char* folder) {
 
-    int fd, bytes_read;
-    char str[64];
+    int fd;
+    char c, str[64];
     char buffer[100] = "";
-    int total = 0, pos = 0;
+    int total = 0, pos = 0, bytes_read=0, linha, flag_args = 0;
     char store[100][20];
 
     for (int i=0; i<100; i++) {
         strcpy(store[i], "");
     }
 
-    for(int i=0; i<256 && args[i] != 0; i++) {
+    for(int i=0; i<256 && strcmp(args[i], "") != 0; i++) {
         str[64];
-        snprintf(str, sizeof(str), "%s%d.txt", folder, args[i]);
+        snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
         fd = open(str, O_RDONLY);
-        char c;
-        int bytes_read=0, flag = 0, flag_args = 0;
-
+        
         strcpy(buffer, "");
+
+        linha = 0;
+
         while(read(fd, &c, sizeof(c)) == 1){
             if (c != '\n' && c != ' ') {
                 buffer[bytes_read++] = c;
             }
-            else if (c == '\n' && flag < 1) {
-                flag++;
+            else if (c == '\n' && linha < 1) {
+                linha++;
                 strcpy(buffer, "");
                 bytes_read = 0;
             }
-            else if (flag >= 1 && !flag_args){    
+            else if (linha >= 1 && !flag_args){    
                 buffer[bytes_read] = '\0';
                 for (int i=0; i<=pos; i++) {
-                    if (!strcmp(buffer, store[i])) {
+                    if (pos > 0 && !strcmp(buffer, store[i])) {
                         strcpy(buffer, "");
                         bytes_read = 0;
                         break;
                     }
-                    else if (i == pos && strcmp(buffer, store[i]) != 0) {
+                    else if (pos == 0 || (i == pos && strcmp(buffer, store[i]) != 0)) {
                         strcpy(store[pos++], buffer); 
+                        printf("%s\n", store[pos-1]);
                         strcpy(buffer, "");
                         bytes_read = 0;
                         break;
@@ -165,61 +156,46 @@ void stats_uniq(int args[], char* folder) {
             else if (c == '\n')
                 flag_args = 0;
         }
+
         strcpy(buffer, "");
         bytes_read = 0;
-    }
 
-    close(fd);
+        close(fd);
+    }
 
     fd = open("pipe1", O_WRONLY);
 
     for(int i=0; i<pos; i++) {
         write(fd, store[i], strlen(store[i]));
         write(fd, "\n", 1);
-        printf("%s\n", store[i]);
     }
 
     close(fd);
-
 }
-
 
 int main(int argc, char** argv) {
 
-    int res, res1, fd1, fd2, fd_pids, bytes_read, i=0;
-    prog buffer;
-    prog store[100];
+    int res_fifo, res1_fifo, fd_read, fd_write, fd_pids, bytes_read, i=0;
+    prog buffer, store[100];
 
-    res = mkfifo("pipe", 0666); 
-    res1 = mkfifo("pipe1", 0666);
+    res_fifo = mkfifo("pipe", 0666); 
+    res1_fifo = mkfifo("pipe1", 0666);
 
-    fd1 = open("pipe", O_RDONLY);
-    fd2 = open("pipe", O_WRONLY); // Mantém o servidor a correr    
+    fd_read = open("pipe", O_RDONLY);
+    fd_write = open("pipe", O_WRONLY); // Mantém o servidor a correr    
     
-    while ((bytes_read = read(fd1, &buffer, sizeof(buffer))) > 0) {
+    while ((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
         if (!strcmp(buffer.cmd, "status")) {
             status(store, i);
         }
         else if (!strcmp(buffer.cmd, "stats-time")) {    
-            int args[256] = {0};
-            for (int i = 0; i<256 && strcmp(buffer.args[i], "") != 0; i++) {   
-                args[i] = atoi(buffer.args[i]);
-            }
-            stats_time(args, argv[1]);
+            stats_time(buffer.args, argv[1]);
         }
         else if (!strcmp(buffer.cmd, "stats-command")) {
-            int args[255] = {0};
-            for (int i = 0; i<255 && strcmp(buffer.args[i+1], "") != 0; i++) {   
-                args[i] = atoi(buffer.args[i+1]);
-            }
-            stats_command(buffer.args[0], args, argv[1]);
+            stats_command(buffer.args[0], buffer.args+1, argv[1]);
         }
         else if (!strcmp(buffer.cmd, "stats-uniq")) {
-            int args[256] = {0};
-            for (int i = 0; i<256 && strcmp(buffer.args[i], "") != 0; i++) {   
-                args[i] = atoi(buffer.args[i]);
-            }
-            stats_uniq(args, argv[1]);
+            stats_uniq(buffer.args, argv[1]);
         }
         else {
             int flag = 0, pos;
@@ -243,19 +219,20 @@ int main(int argc, char** argv) {
                     i--;
                     flag = 1;
                     break;
+                }
             }
-        }
-        if (!flag) {
-            store[i] = buffer;
-            i++;
-        }
+            if (!flag) {
+                store[i] = buffer;
+                i++;
+            }
         }
     }   
 
-    close(fd1);
-    close(fd2);
+    close(fd_read);
+    close(fd_write);
 
     unlink("pipe");
+    unlink("pipe1");
 
     return 0;
 }

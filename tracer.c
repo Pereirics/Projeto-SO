@@ -7,24 +7,15 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <sys/time.h>
+#include "prog.h"
 
 #define MAX_TOKENS 1000
-
-typedef struct prog 
-{
-    int pid;
-    char cmd[256];
-    char args[256][7];
-    struct timeval start;
-    int ms;
-} prog;
-
 
 int tokenize(char* comando, char **store, char* sep) {
     int token_number = 0;
     char *token = NULL;
 
-    token = strsep(&comando, sep); // encontra ' ' numa string e torna em '\0';
+    token = strsep(&comando, sep); 
     while (token != NULL && token_number < MAX_TOKENS) {
         if (!strcmp("\0", token))
             store[token_number] = NULL;
@@ -42,57 +33,43 @@ int tokenize(char* comando, char **store, char* sep) {
 }
 
 void execute(char **comand, char* cmd) {
-    int ret, status, fd, fd1[2], fd2[2];
-    char pid_str[32];
-    char sec_str[32];
-    char usec_str[32];
+    int ret, status, fd, fd_pai[2];
     pid_t pid;
 
-    struct prog novo;
+    struct prog servidor, pai, buffer;
 
-    pipe(fd1); // this pipe will be used to send the start time of the command to the parent process.
-    pipe(fd2);
-
+    pipe(fd_pai);
     pid = fork();
     if (pid == 0)
     {
         struct timeval tv1;
 
         fd = open("pipe", O_WRONLY);
-        close(fd1[0]); // we close the read end of the pipe (fd1[0]) since the child process only needs to write to it.
-        close(fd2[0]);
+
+        close(fd_pai[0]); 
 
         pid_t child_pid;
         child_pid = getpid();
 
-        // Indica ao utilizador o PID do programa a executar
-        char pid_str[64];
-        int len = snprintf(pid_str, sizeof(pid_str), "PID do programa a executar: %d\n", child_pid);
-        write(1, pid_str, len);
+        char str[32];
+        int len = snprintf(str, sizeof(str), "Running PID %d\n", child_pid);
+        write(1, str, len);
 
-        // Indica ao servidor e ao processo-pai o PID do programa a executar
-        char pid_str1[8];
-        snprintf(pid_str1, sizeof(pid_str1), "%d ", child_pid);
-        novo.pid = child_pid;
-        write(fd1[1], pid_str1, strlen(pid_str1)); // pai
+        pai.pid = child_pid;
+        servidor.pid = child_pid;
 
-        // Indica ao servidor o nome do programa a executar
-        strcpy(novo.cmd, cmd);
+        strcpy(servidor.cmd, cmd);
 
-        // Calcula o timestamp
         gettimeofday(&tv1, NULL);      
         
-        // Passa o timestamp ao servidor
-        novo.start = tv1;
-        
-        // Passa o timestamp ao processo-pai
-        write(fd2[1], &tv1, sizeof(tv1));
+        servidor.start = tv1;
+        pai.start = tv1;
 
-        write(fd, &novo, sizeof(novo));
+        write(fd_pai[1], &pai, sizeof(pai));
+        write(fd, &servidor, sizeof(struct prog));
        
         close(fd);
-        close(fd1[1]);
-        close(fd2[1]);
+        close(fd_pai[1]);
 
         ret = execvp(comand[0], comand);
         if (ret == -1)
@@ -103,40 +80,29 @@ void execute(char **comand, char* cmd) {
     }
     else
     {
-
         waitpid(pid, &status, 0);
-        if (WIFEXITED(status))
-        {
-
-            struct timeval start, end;
+        if (WIFEXITED(status)) {
+            struct timeval end;
             
             gettimeofday(&end, NULL);
 
-            fd = open("pipe", O_WRONLY);
-            close(fd1[1]);
-            close(fd2[1]);
+            close(fd_pai[1]);
 
-            // Lê o PID do programa que acabou de executar e passa ao servidor
-            char buffer[8];
-            int bytes_read = read(fd1[0], buffer, sizeof(buffer));
-            novo.pid = atoi(buffer);
+            fd = open("pipe", O_WRONLY);
             
-            // Lê o tempo inicial, calcula o final e calcula a diferença entre os dois (tempo de execução) 
-            bytes_read = read(fd2[0], &start, sizeof(start));
-            
-            long diff = (end.tv_usec-start.tv_usec)/1000 + (end.tv_sec-start.tv_sec)*1000;
+            int bytes_read = read(fd_pai[0], &buffer, sizeof(buffer));
+            servidor.pid = buffer.pid;
+                        
+            int diff = (end.tv_usec-buffer.start.tv_usec)/1000 + (end.tv_sec-buffer.start.tv_sec)*1000;
             char str[32];
-            snprintf(str, sizeof(str), "Tempo de execução:%ldms\n", diff);
+            snprintf(str, sizeof(str), "Ended in %d ms\n", diff);
             write(1, str, strlen(str)); 
 
-            // Passa o tempo de execução para o servidor em ms
-            novo.ms = diff;
-            write(fd, &novo, sizeof(novo));
+            servidor.ms = diff;
+            write(fd, &servidor, sizeof(struct prog));
         }
-
         close(fd);
-        close(fd1[0]);
-        close(fd2[0]);
+        close(fd_pai[0]);
     }
 }
 
@@ -151,7 +117,7 @@ void pipeline(char** store[], int num, char* cmd) {
     strcpy(p.cmd, cmd);
 
     char str[64];
-    snprintf(str, sizeof(str), "PID da pipeline a executar: %d\n", p.pid);
+    snprintf(str, sizeof(str), "Running PID %d\n", p.pid);
     write(1, str, strlen(str));
 
     struct timeval start, end;
@@ -208,7 +174,7 @@ void pipeline(char** store[], int num, char* cmd) {
     gettimeofday(&end, NULL);
 
     int diff = (end.tv_usec-start.tv_usec)/1000 + (end.tv_sec-start.tv_sec)*1000;
-    snprintf(str, sizeof(str), "Tempo de execução: %dms\n", diff);
+    snprintf(str, sizeof(str), "Ended in %d ms\n", diff);
     write(1, str, strlen(str));
 
     p.ms = diff;
@@ -219,13 +185,11 @@ void pipeline(char** store[], int num, char* cmd) {
 
 
 int main(int argc, char **argv) {
-    int fd1, fd2, bytes_read, status;
+    int fd_write, fd_read, bytes_read, status;
     char *store[MAX_TOKENS];
     char cmd[MAX_TOKENS];
     char buffer[100];
     struct prog st;
-
-    fd1 = open("pipe", O_WRONLY);    
 
     if (!strcmp(argv[1], "execute") && !strcmp(argv[2], "-u")) {
         strcpy(cmd, argv[3]);
@@ -234,12 +198,12 @@ int main(int argc, char **argv) {
     }
     else if (!strcmp(argv[1], "status")) {
         strcpy(st.cmd, argv[1]);
-        write(fd1, &st, sizeof(st));
-        fd2 = open("pipe1", O_RDONLY);
-        while ((bytes_read = read(fd2, &buffer, sizeof(buffer))) > 0) {
+        write(fd_write, &st, sizeof(st));
+        fd_read = open("pipe1", O_RDONLY);
+        while ((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
                 write(1, buffer, bytes_read);
             }
-        close(fd2);
+        close(fd_read);
     }
     else if (!strcmp(argv[1], "execute") && !strcmp(argv[2], "-p")) {
         int num = tokenize(argv[3], store, "|");
@@ -250,13 +214,13 @@ int main(int argc, char **argv) {
             tokenize(store[i], new_store[i], " ");
             strcat(dest, new_store[i][0]);
             if (i != num-1) 
-                strcat(dest, "\n");
+                strcat(dest, " | ");
         }
         pipeline(new_store, num, dest);
     }
     else if (!strcmp(argv[1], "stats-time")) {
 
-        int fd = open("pipe", O_WRONLY);
+        fd_write = open("pipe", O_WRONLY);
         prog p;
         strcpy(p.cmd, argv[1]);
         
@@ -269,19 +233,19 @@ int main(int argc, char **argv) {
             p.args[j][strlen(argv[i])] = '\0'; 
         }
 
-        write(fd, &p, sizeof(struct prog));
+        write(fd_write, &p, sizeof(struct prog));
 
-        close(fd);
+        close(fd_write);
 
-        fd = open("pipe1", O_RDONLY);
+        fd_read = open("pipe1", O_RDONLY);
         char buffer[10];
-        int bytes_read = read(fd, &buffer, sizeof(buffer));
+        int bytes_read = read(fd_read, &buffer, sizeof(buffer));
         write(1, buffer, bytes_read);
-        close(fd);
+        close(fd_read);
     }
     else if (!strcmp(argv[1], "stats-command")) {
 
-        int fd = open("pipe", O_WRONLY);
+        fd_write = open("pipe", O_WRONLY);
         prog p;
 
         strcpy(p.cmd, argv[1]);
@@ -297,50 +261,46 @@ int main(int argc, char **argv) {
             p.args[j][strlen(argv[i])] = '\0'; 
         }
 
-        write(fd, &p, sizeof(struct prog));
+        write(fd_write, &p, sizeof(struct prog));
 
-        close(fd);
+        close(fd_write);
 
-        fd = open("pipe1", O_RDONLY);
+        fd_read = open("pipe1", O_RDONLY);
         char buffer[10];
-        int bytes_read = read(fd, &buffer, sizeof(buffer));
+        int bytes_read = read(fd_read, &buffer, sizeof(buffer));
         write(1, buffer, bytes_read);
-        close(fd);
+        close(fd_read);
     }
     else if (!strcmp(argv[1], "stats-uniq")) {
         
-        int fd = open("pipe", O_WRONLY);
+        fd_write = open("pipe", O_WRONLY);
         prog p;
 
         strcpy(p.cmd, argv[1]);
 
-        int i, j;
-        for(i=0; i<256; i++)
+        for(int i=0; i<256; i++)
             strcpy(p.args[i], "");
 
         strcpy(p.args[0], argv[2]);
 
-        for (i = 3, j = 1; i < argc; i++, j++) {
+        for (int i = 3, j = 1; i < argc; i++, j++) {
             strcpy(p.args[j], argv[i]);
             p.args[j][strlen(argv[i])] = '\0'; 
         }
 
-        write(fd, &p, sizeof(struct prog));
+        write(fd_write, &p, sizeof(struct prog));
 
-        close(fd);
+        close(fd_write);
 
-        fd = open("pipe1", O_RDONLY);
-        char buffer[100];
+        fd_read = open("pipe1", O_RDONLY);
 
-        while((bytes_read = read(fd, &buffer, sizeof(buffer))) > 0) {
+        while((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
             write(1, buffer, bytes_read);
         }
 
-        close(fd);
+        close(fd_read);
 
     }
-    
-    close(fd1);
 
     return 0;
 }
