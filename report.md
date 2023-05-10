@@ -2,7 +2,7 @@
 
 Struct:
 
-Para a transição de informação entre o cliente e o servidor de um programa (entre os pipes e, por continuidade, as pipelines), procedeu-se a criação de uma struct que armazena todos os dados aos quais pretendemos trabalhar com – desde o comando, argumentos associados, o tempo de iniciação do processo e respetivo tempo de execução. Deste modo, haverá menos perda de informação e organizada de uma maneira mas sucinta.
+Para a transição de informação entre o cliente e o servidor de um programa (entre os pipes e, por continuidade, as pipelines), procedeu-se a criação de uma struct que armazena todos os dados aos quais pretendemos trabalhar com – desde o comando, argumentos associados, o tempo de iniciação do processo e respetivo tempo de execução. Deste modo, haverá menos perda de informação e esta estará organizada de uma maneira mais sucinta.
 
 Tokenizer:
 
