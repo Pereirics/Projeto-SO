@@ -86,11 +86,11 @@ void execute(char **comand, char* cmd) {
         if (bytes_written == -1)
             perror("Error writing to STDOUT.");
 
-        // Stores the PID in the struct that will be sent to the parent process and to the server.
+        // Stores the PID in the struct that will be sent to the parent process and to the server
         par.pid = child_pid;
         server.pid = child_pid;
 
-        // Stores the name of the program that will be run on the struct that will be sent to the parent process
+        // Stores the name of the program that will be run on the struct that will be sent to the server
         strcpy(server.cmd, cmd);
 
         // Gets time of day
@@ -109,7 +109,7 @@ void execute(char **comand, char* cmd) {
         if (bytes_written == -1)
             perror("Error writing to pipe_to_parent.");
 
-        // Sends the struct with the PID, the name and start time of the program to the parent process
+        // Sends the struct with the PID, the name and start time of the program to the server
         bytes_written = write(fd, &server, sizeof(struct prog));
         if (bytes_written == -1)
             perror("Error writing to pipe_to_server.");
@@ -479,11 +479,12 @@ int main(int argc, char **argv) {
     // Executes option "execute -u" that executes a program given by the user
     if (!strcmp(argv[1], "execute") && !strcmp(argv[2], "-u")) {
         if (argc == 4) {
-            // Stores the name of the program to be sent to the server
-            strcpy(cmd, argv[3]);
 
             // Tokenizes the command with the delimiter ' ' and stores it in the string array store
             tokenize(argv[3], store, " ");
+
+            // Stores the name of the program to be sent to the server
+            strcpy(cmd, store[0]);
 
             // Executes the program requested 
             execute(store, cmd);
@@ -634,7 +635,7 @@ int main(int argc, char **argv) {
             }
 
             // Reads the contents from the pipe
-            char buffer[10];
+            char buffer[32];
             bytes_read = read(fd_read, &buffer, sizeof(buffer));
             if (bytes_read == -1) {
                 perror("Error reading from pipe_to_client.");
@@ -707,7 +708,7 @@ int main(int argc, char **argv) {
             }
 
             // Reads the contents from the buffer
-            char buffer[10];
+            char buffer[64];
             bytes_read = read(fd_read, &buffer, sizeof(buffer));
             if (bytes_read == -1) {
                 perror("Error reading from pipe_to_client.");

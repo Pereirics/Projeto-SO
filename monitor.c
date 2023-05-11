@@ -35,10 +35,10 @@ void status(struct prog store[], int N) {
     // Cycles through the array that contains all running programs and calculates the running time until now
     for(int i=0; i<N; i++) {
         diff = (now.tv_usec-store[i].start.tv_usec)/1000 + (now.tv_sec-store[i].start.tv_sec)*1000;
-        char str[32];
+        char str[269];
 
         // Formats the string
-        res = snprintf(str, sizeof(str), "%d %s %ld ms\n", store[i].pid, store[i].cmd, diff);
+        res = snprintf(str, sizeof(str), "%d %s %d ms\n", store[i].pid, store[i].cmd, diff);
         if (res < 0) {
             perror("Error formating string.");
             _exit(1);
@@ -83,7 +83,7 @@ void stats_time(char args[][7], char* folder) {
             _exit(1);
         }
 
-        // Open the file of the PID (Reading)
+        // Open the file descriptor of the file with the PID name (Reading)
         fd = open(str, O_RDONLY);
         if (fd == -1) {
             perror("Error opening file with PID name.");
@@ -105,7 +105,7 @@ void stats_time(char args[][7], char* folder) {
         // Sums the ms of the file to the total amount
         total += atoi(buffer);
 
-        // Closes the pipe to the file with the PID name
+        // Closes the file descriptor of the file with the PID name
         res = close(fd);
         if (res == -1) {
             perror("Error closing the file with PID name.");
@@ -121,8 +121,8 @@ void stats_time(char args[][7], char* folder) {
     }
 
     // Formats the string that will be sent to the server
-    str[10];
-    res = snprintf(str, sizeof(str), "%d\n", total);
+    str[32];
+    res = snprintf(str, sizeof(str), "Total execution time is %d ms\n", total);
     if (res < 0) {
         perror("Error formatting string.");
         _exit(1);
@@ -162,7 +162,7 @@ void stats_command(char* cmd, char args[][7], char* folder) {
             _exit(1);
         }
 
-        // Opens the pipe to the file with the PID name (Reading)
+        // Opens the file descriptor of the file with the PID name (Reading)
         fd = open(str, O_RDONLY);
         if (fd == -1) {
             perror("Error opening the file with PID name.");
@@ -173,8 +173,8 @@ void stats_command(char* cmd, char args[][7], char* folder) {
         pos=0;
         while((bytes_read = read(fd, &c, sizeof(c))) == 1){
             
-            // Checks if the char read is different from '\n' (end of line) and from a ' ' (beggining of the command arguments) and stores it in the buffer
-            if (c != '\n' && c != ' ') {
+            // Checks if the char read is different from '\n' (end of line) and stores it in the buffer
+            if (c != '\n') {
                 buffer[pos++] = c;
             }
             else {    
@@ -195,7 +195,7 @@ void stats_command(char* cmd, char args[][7], char* folder) {
             _exit(1);
         }
 
-        // Closes the pipe to the file with the PID name
+        // Closes the file descriptor of the file with the PID name
         res = close(fd);
         if (res == -1) {
             perror("Error closing file with PID name.");
@@ -211,8 +211,8 @@ void stats_command(char* cmd, char args[][7], char* folder) {
     }
 
     // Formats the string with the total number of times the command was executed in those PIDs
-    str[10];
-    res = snprintf(str, sizeof(str), "%d\n", total);
+    str[64];
+    res = snprintf(str, sizeof(str), "%s was executed %d times\n", cmd, total);
     if (res < 0) {
         perror("Error formatting string.");
         _exit(1);
@@ -238,7 +238,7 @@ void stats_uniq(char args[][7], char* folder) {
     int fd, res, bytes_written;
     char c, str[64];
     char buffer[100] = "";
-    int total = 0, pos = 0, pos_store = 0, bytes_read=0, line, flag_args = 0;
+    int total = 0, pos = 0, pos_store = 0, bytes_read=0, line;
     char store[100][20];
 
     // Initializes the array to an empty string in all positions
@@ -257,7 +257,7 @@ void stats_uniq(char args[][7], char* folder) {
             _exit(1);
         }
 
-        // Opens the pipe to the file with the PID name
+        // Opens a file descriptor of the file with the PID name (Reading)
         fd = open(str, O_RDONLY);
         if (fd == -1) {
             perror("Error opening file with PID name.");
@@ -271,8 +271,8 @@ void stats_uniq(char args[][7], char* folder) {
         line = 0;
         while((bytes_read = read(fd, &c, sizeof(c))) == 1){
             
-            // If the char read is different from a '\n' (end of line) and from a ' ' (beggining of the arguments) it stores the char in the buffer
-            if (c != '\n' && c != ' ') {
+            // If the char read is different from a '\n' (end of line) it stores the char in the buffer
+            if (c != '\n') {
                 buffer[pos++] = c;
             }
             
@@ -283,8 +283,8 @@ void stats_uniq(char args[][7], char* folder) {
                 pos = 0;
             }
             
-            // If we are not on the first line and are not reading arguments of a command, check if the command will be stored
-            else if (line >= 1 && !flag_args){    
+            // If we are not on the first line, check if the command will be stored
+            else if (line >= 1){    
 
                 // Terminates the string to prevent leaks
                 buffer[pos] = '\0';
@@ -311,12 +311,6 @@ void stats_uniq(char args[][7], char* folder) {
                 strcpy(buffer, "");
                 pos = 0;
             }
-
-            // If the read char
-            if (c == ' ') 
-                flag_args = 1;
-            else if (c == '\n')
-                flag_args = 0;
         }
 
         if (bytes_read == -1) {
@@ -324,9 +318,11 @@ void stats_uniq(char args[][7], char* folder) {
             _exit(1);
         }
 
+        // Sets the buffer to an empty string
         strcpy(buffer, "");
         pos = 0;
 
+        // Closes the file descriptor of the file with the PID name
         res = close(fd);
         if (res == -1) {
             perror("Error closing file with PID name.");
@@ -334,20 +330,22 @@ void stats_uniq(char args[][7], char* folder) {
         }
     }
 
+    // Opens a pipe to the client (Writing)
     fd = open("pipe_to_client", O_WRONLY);
     if (fd == -1) {
         perror("Error opening pipe_to_client.");
         _exit(1);
     }
 
-
+    // Cycles through the array where the uniq commands were stored and writes them to the client, one by one
     for(int i=0; i<pos_store; i++) {
         bytes_written = write(fd, store[i], strlen(store[i]));
         if (bytes_written == -1) {
             perror("Error writting to client.");
             _exit(1);
         }
-        
+
+        // Adds a '\n' so it only shows one by line
         bytes_written = write(fd, "\n", 1);
         if (bytes_written == -1) {
             perror("Error writing to client.");
@@ -355,6 +353,7 @@ void stats_uniq(char args[][7], char* folder) {
         }
     }
 
+    // Closes the pipe to the client
     res = close(fd);
     if (res == -1) {
         perror("Error closing pipe_to_client.");
@@ -364,88 +363,118 @@ void stats_uniq(char args[][7], char* folder) {
 
 int main(int argc, char** argv) {
 
-    int res, fd_read, fd_write, fd_pids, bytes_read, bytes_written, i=0;
+    int fd_read, fd_write, fd_pids;
+    int res, bytes_read, bytes_written;
+    int flag, pos, pos_store=0;
     prog buffer, store[100];
 
+    // Checks if the number of arguments is correct
     if (argc == 2) {
 
+        // Creates a pipe to read from the client
         if(mkfifo("pipe_to_server", 0666) == -1) {
             perror("Error creating fifo that connects to server."); 
             _exit(1);
         }
 
+        // Creates a pipe to write to the client
         if(mkfifo("pipe_to_client", 0666) == -1) {
             perror("Error creating fifo that connects to client.");
             _exit(1);
         }
 
+        // Opens the pipe to the server (Reading)
         fd_read = open("pipe_to_server", O_RDONLY);
         if (fd_read == -1) {
             perror("Error opening pipe_to_server.");
             _exit(1);
         }
 
-        // Keeps the server running
+        // This keeps the server running as it will block if no reading file descriptors are open
         fd_write = open("pipe_to_server", O_WRONLY); 
         if (fd_write == -1) {
             perror("Error opening pipe_to_server");
             _exit(1);
         }
 
+        // Reads from the client structs prog
         while ((bytes_read = read(fd_read, &buffer, sizeof(buffer))) > 0) {
+            // If the command read from the client is "status", executes function associated with that functionality
             if (!strcmp(buffer.cmd, "status")) {
-                status(store, i);
+                status(store, pos_store);
             }
+            // If the command read from the client is "stats-time", executes function associated with that functionality
             else if (!strcmp(buffer.cmd, "stats-time")) {    
                 stats_time(buffer.args, argv[1]);
             }
+            // If the command read from the client is "stats-command", executes function associated with that functionality
             else if (!strcmp(buffer.cmd, "stats-command")) {
                 stats_command(buffer.args[0], buffer.args+1, argv[1]);
             }
+            // If the command read from the client is "stats-uniq", executes function associated with that functionality
             else if (!strcmp(buffer.cmd, "stats-uniq")) {
                 stats_uniq(buffer.args, argv[1]);
             }
+            // If the command read from the client is "kill", it breaks the cycle so the program monitor will end 
             else if (!strcmp(buffer.cmd, "kill")) {
                 break;
             }
+            // The struct will only enter here when a new program is being notified to the server, or when a program has finished executing
             else {
-                int flag = 0, pos;
-                for(int j=0; j<=i; j++) { 
-                    if (store[j].pid == buffer.pid) {
+                flag = 0;
+                // Cycles through the store array to check if the program is new or an existing one
+                for(int i=0; i <= pos_store; i++) { 
+                    // If it is an existing one, it will create a new file with the PID name and store the running time and the commands used in it
+                    if (store[i].pid == buffer.pid) {
+                        
+                        // Formats the string that will be the path to the file created with the PID as the name
                         char file[64];
-                        snprintf(file, sizeof(file), "%s/%d.txt", argv[1], store[j].pid);
-                        int fd_pids = open(file, O_CREAT | O_WRONLY, 0666);
+                        snprintf(file, sizeof(file), "%s/%d.txt", argv[1], store[i].pid);
+                        fd_pids = open(file, O_CREAT | O_WRONLY, 0666);
                         if (fd_pids == -1) 
                             perror("Error opening/creating the file with the PID name.");
 
+                        // Formats the string that will be the running time of the program
                         char str1[128];
                         res = snprintf(str1, sizeof(str1), "%d\n", buffer.ms);
                         if (res < 0) 
                             perror("Error formatting string.");
                         
+                        // Writes that same string to the file with the PID name
                         bytes_written = write(fd_pids, str1, strlen(str1));
                         if (bytes_written == -1) 
                             perror("Error writing to the file with the PID name.");
 
+                        // Formats the string that will be the commands of the program
                         char str2[260];
-                        snprintf(str2, sizeof(str2), "%s\n", store[j].cmd);
+                        res = snprintf(str2, sizeof(str2), "%s\n", store[i].cmd);
+                        if (res < 0) 
+                            perror("Error formatting string.");
+
+                        // Writes that same string to the file with the PID name
                         bytes_written = write(fd_pids, str2, strlen(str2));
                         if (bytes_written == -1)
                             perror("Error writing to the file with the PID name.");
 
+                        // Closes the file descriptor of the file with the PID name
                         res = close(fd_pids);
                         if (res == -1)
                             perror("Error closing the file with PID name.");
 
-                        store[j] = store[i-1];
-                        i--;
+                        // "Removes" that element from the array, as it is no longer a running program
+                        store[i] = store[pos_store-1];
+                        pos_store--;
+
+                        // Sets the flag to 1 to not store this struct in the array store (that contains the running programs)
                         flag = 1;
                         break;
                     }
                 }
+
+                // If it is a new program, stores the struct in the store array
                 if (!flag) {
-                    store[i] = buffer;
-                    i++;
+                    store[pos_store] = buffer;
+                    pos_store++;
                 }
             }
         }   
@@ -453,16 +482,22 @@ int main(int argc, char** argv) {
         if (bytes_read == -1)
             perror("Error reading from client.");
 
+        // Closes the pipe to the server 
         res = close(fd_read);
         if (res == -1)
             perror("Error closing fd_read.");
         res = close(fd_write);
+
+        // Closes the pipe to the client
         if (res == -1)
             perror("Error closing fd_write.");
 
+        // Deletes the fifo that read from the client
         res = unlink("pipe_to_server");
         if (res == -1)
             perror("Error deleting pipe_to_server.");
+
+        // Deletes the fifo that wrote to the client
         res = unlink("pipe_to_client");
         if (res == -1)
             perror("Error deleting pipe_to_client.");
