@@ -1,51 +1,73 @@
 \documentclass{report}
 \usepackage{graphicx} % Required for inserting images
+\usepackage{lipsum}
+\usepackage{setspace}
+\usepackage{authblk}
 
-\title{SO}
-\author{Miguel Pereira}
-\date{May 2023}
+\usepackage[margin=1.1811in]{geometry}
+\usepackage{geometry}
+
+\title{Rastreamento e Monitorização da Execução de Programas\\
+\Large Universidade do Minho}
+
+\author{Miguel António Vaz Pinto Pereira (a72161)\\João Luda Cruz Pereira (a95375)\\ Maria Helena Salazar (axxxxx)}
+\date{April, May 2023}
 
 \begin{document}
+\spacing{1.25}
 
 \maketitle
-
-\section{Introduction}
+\section{Introdução}
+\lipsum[5]
+\newpage
 
 \section{Funcionalidades Básicas}
+\subsection{Execução de programas por parte do utilizador}
 
-\subsection{"execute -u"}
+Em \textbf{geral,}\\
 
-Em geral,
-
-Para então prosseguirmos com a execução do programa em questão, definiu-se uma função execute onde se processa a inicialização com um fork (para permitir a execução sem uma terminação prévia do programa), onde o comando procede com os respectivos argumentos. Foram também escritas mensagens de erro caso aconteçam durante o correr do código, desde a impossibilidade de criação de um processo filho à execução através do execvp.
-
+Para prosseguir com a execução do programa em questão, definiu-se uma função execute onde se processa a inicialização com um \textbf{fork} \textit{(para permitir a execução sem um término prévio do programa)} e o comando procede com os respectivos argumentos.\par
+Foram também escritas mensagens de erro caso aconteçam durante o correr do código, desde a impossibilidade de criação de um processo filho à execução através do \textbf{execvp}.\\
 Os argumentos em questão foram separados por uma função tokenizer e durante todo o processamento de dados do código será maioritariamente suportado por uma struct prog. Seguem-se então breves explicações sobre a construção e funcionamento destes.
 
-\subsubsection{Tokenizer}
+\subsubsection{\underline{Tokenizer}}
 
-Derivado da criação da funcionalidade “execute -u”, onde será necessário analisar o conteúdo da string fornecida pelo utilizador ao cliente, surgiu a necessidade da criação de um sistema auxiliar que nos permita dividir esta em seus vários componentes (cujo parâmetro de divisão seja o caracter espaço).
-
+Derivado da criação da funcionalidade \textbf{execute -u}, onde será necessário analisar o conteúdo da string fornecida pelo utilizador ao cliente, surgiu a necessidade da criação de um sistema auxiliar que nos permita dividir esta em seus vários componentes \textit{(cujo parâmetro de divisão seja o caracter espaço)}.\\
 Com isto em mente, recorreu-se a uma função tokenizer, aonde se dá a separação do input introduzido pelo utilizador em tokens de formato string (que posteriormente serão armazenados array), o que então possibilita o uso do conteúdo do programa em si – o seu comando e respetivos argumentos – em outras funcionalidades do projeto.
 
-\subsubsection{Struct prog}
+\subsubsection{\underline{Struct \textbf{PROG}}}
 
-Para a transição de informação entre o cliente e o servidor de um programa (entre os pipes e, por continuidade, as pipelines), procedeu-se a criação de uma struct que armazena todos os dados aos quais pretendemos trabalhar com – desde o comando, argumentos associados, o tempo de iniciação do processo e respetivo tempo de execução. Deste modo, haverá menos perda de informação e esta estará organizada de uma maneira mas sucinta.
+Para a transição de informação entre o cliente e o servidor de um programa \textit{(entre os pipes e, por continuidade, as pipelines)}, procedeu-se a criação de uma struct que armazena todos os dados aos quais pretendemos trabalhar com; desde o comando em si, argumentos associados, o tempo de iniciação do processo e respetivo tempo de execução. Deste modo, haverá menos perda de informação e esta estará organizada de uma maneira mas sucinta.
 
-\subsubsection{Execute: Cliente}
+\subsubsection{\underline{Novo Programa do Utilizador e Respectiva Terminação}}
 
-A funcionalidade core do projeto, o execute, procede com a cálculo de um processo filho que estará conectado a um pipe que servirá para futuro intercambio de informação com os processos a correr. Prossegue-se então para a execução os comandos que serão introduzidos pelo utilizador seguido da função.
+\subparagraph{Cliente:}
+A funcionalidade core do projeto, o execute, procede com a cálculo de um processo filho que estará conectado a um pipe que servirá para futuro intercâmbio de informação com os processos a correr. Prossegue-se então para a execução os comandos que serão introduzidos pelo utilizador seguido da função.\\
 
-Com a função gettimeofday, procedemos a atribuição do tempo inicial ao qual um programa começa a executar e passa-se essa informação através de uma struct previamente criada a fim de guardar o PID (do filho em causa) e esse mesmo tempo para o processo pai através de um pipe anónimo e ao servidor atravès de um FIFO. Neste também será enviada o nome do comando que foi executado com sucesso.
+Com a função gettimeofday, procedemos a atribuição do tempo inicial ao qual um programa começa a executar e passa-se essa informação através de uma struct previamente criada a fim de guardar o PID \textit{(do filho em causa)} e esse mesmo tempo para o processo pai através de um pipe anónimo e ao servidor atravès de um \textbf{FIFO}. Neste processo, também será enviado o nome do comando que foi executado com sucesso.\\
 
-Assim que o processo filho termina a sua execução, o processo pai (que estava em modo WAIT, ou seja, em modo espera) chama também a função gettimeofday para obter o tempo de término e com a informação recebida do filho, este calcula a diferença entre ambos – isto é, o tempo que o programa demorou a executar. Essa duração em milissegundos juntamente com o PID do processo filho que acabou de concluir serão então enviados para o servidor por FIFO.
+Assim que o processo filho termina a sua execução, o processo pai (que estava em modo \textbf{WAIT}, ou seja, em modo espera) chama também a função gettimeofday para obter o tempo de término e com a informação recebida do filho, este calcula a diferença entre ambos – isto é, o tempo que o programa demorou a executar. Essa duração em milissegundos juntamente com o PID do processo filho que acabou de concluir serão então enviados para o servidor por \textbf{FIFO}.\\
 
-Durante o correr das introduções deste pedaço de código, o utilizador é informado do PID do programa que está a correr e no final, o tempo de exucução do mesmo. O utilizador também é informado de vários erros que posso acontecer durante a execução.
+Durante o correr das introduções deste pedaço de código, o utilizador é informado do PID do programa que está a correr e no final, o tempo de execução do mesmo. O utilizador também é informado de vários erros que posso acontecer durante a execução.
 
-\subsubsection{Execute: Servidor}
 
-Para simplificar o processamento de informação dos vários programas que estão a execução, criou-se um array store que vai armazenar em cada índice struct prog. Tendo este array, inicializamos a leitura do PID enviado e vai consultar se este já existe dentro de algum índice do store. Se encontrado, quer dizer que o programa em questão já terminou; se não encontrar, armanazena-o.
+\subparagraph{Servidor:}
 
-\subsection{"status"}
+Para simplificar o processamento de informação dos vários programas que estão a execução, criou-se um array store que vai armazenar em cada índice struct prog. Tendo este array, inicializamos a leitura do PID enviado e vai consultar se este já existe dentro de algum índice do store. Se encontrado, quer dizer que o programa em questão já terminou; se não encontrar, armazena-o. 
+
+\subsection{Consulta dos Programas em Execução}
+A função status quais são os programas que estão a executar e o seu tempo até ao momento (milisegundos). Os resultados serão apresentados ao utilizador pelo cliente, listados um por linha.
+
+\subsubsection{Status: Cliente}
+
+Quando é lido o comando status, abre-se um pipe onde a informação passada por este será feita em struct prog\footnote{Neste caso, decidiu-se comunicar com o servidor pois este está sempre com um processo de leitura direcionado à informação no formato da struct prog.} onde seguirá o comando ‘status’ para que o servidor reconheça qual o próximo passo a executar. Dado como terminado o reconhecimento dos programas a executar pelo lado do servidor, o cliente lê toda a data enviada e imprime no standard output o PID, o nome do programa e o seu tempo de execução até ao momento.
+
+
+\subsubsection{Status: Servidor}
+
+Foi pedido ao servidor o tempo de execução do programa até ao momento e para tal, usa-se a função gettimeofday (como visto previamente). Procedemos com a abertura de um pipe para o cliente onde será enviada a informação pedida pelo mesmo, desta vez só usando strings\footnote{Quando estabelecidas conexões do servidor para o cliente, o pipe não está dependente de structs. Então, com isto em mente, procurou-se usar strings para o envio desta mesma informação pois facilita o processo em causa.}.
+Com o array store passado na função, é feito o cálculo dos vários programas armazenados em struct, sendo depois formatado numa string e enviado pelo pipe acima criado. Depois do ciclo ser dado como terminado, o processo é encerrado com o encerramento desse mesmo pipe e o cliente terá acesso a informação pedida, se nenhum erro ocorrer.\\
+
 
 \end{document}
 
