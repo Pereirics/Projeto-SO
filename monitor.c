@@ -330,7 +330,8 @@ int main(int argc, char** argv) {
             _exit(1);
         }
 
-        fd_write = open("pipe_to_server", O_WRONLY); // Mantém o servidor a correr    
+        // Keeps the server running
+        fd_write = open("pipe_to_server", O_WRONLY); 
         if (fd_write == -1) {
             perror("Error opening pipe_to_server");
             _exit(1);
