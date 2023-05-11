@@ -1,16 +1,18 @@
 \documentclass{report}
 \usepackage{graphicx} % Required for inserting images
 \usepackage{lipsum}
+\graphicspath{/home/migs/pictures}
 \usepackage{setspace}
 \usepackage{authblk}
 
-\usepackage[margin=1.1811in]{geometry}
+
+\usepackage[margin=1.2in]{geometry}
 \usepackage{geometry}
 
 \title{Rastreamento e Monitorização da Execução de Programas\\
 \Large Universidade do Minho}
 
-\author{Miguel António Vaz Pinto Pereira (a72161)\\João Luda Cruz Pereira (a95375)\\ Maria Helena Salazar (axxxxx)}
+\author{Miguel António Vaz Pinto Pereira (a72161)\\João Luís da Cruz Pereira (a95375)\\ Maria Helena Salazar (axxxxx)}
 \date{April, May 2023}
 
 \begin{document}
@@ -27,13 +29,13 @@
 Em \textbf{geral,}\\
 
 Para prosseguir com a execução do programa em questão, definiu-se uma função execute onde se processa a inicialização com um \textbf{fork} \textit{(para permitir a execução sem um término prévio do programa)} e o comando procede com os respectivos argumentos.\par
-Foram também escritas mensagens de erro caso aconteçam durante o correr do código, desde a impossibilidade de criação de um processo filho à execução através do \textbf{execvp}.\\
+Foram também escritas mensagens de erro caso aconteçam durante o correr do código, desde a impossibilidade de criação de um processo filho à execução através do \textbf{execvp}.\par
 Os argumentos em questão foram separados por uma função tokenizer e durante todo o processamento de dados do código será maioritariamente suportado por uma struct prog. Seguem-se então breves explicações sobre a construção e funcionamento destes.
 
 \subsubsection{\underline{Tokenizer}}
 
 Derivado da criação da funcionalidade \textbf{execute -u}, onde será necessário analisar o conteúdo da string fornecida pelo utilizador ao cliente, surgiu a necessidade da criação de um sistema auxiliar que nos permita dividir esta em seus vários componentes \textit{(cujo parâmetro de divisão seja o caracter espaço)}.\\
-Com isto em mente, recorreu-se a uma função tokenizer, aonde se dá a separação do input introduzido pelo utilizador em tokens de formato string (que posteriormente serão armazenados array), o que então possibilita o uso do conteúdo do programa em si – o seu comando e respetivos argumentos – em outras funcionalidades do projeto.
+Com isto em mente, recorreu-se a uma função tokenizer, aonde se dá a separação do input introduzido pelo utilizador em tokens de formato string \textit{(que posteriormente serão armazenados array)}, o que então possibilita o uso do conteúdo do programa em si – o seu comando e respetivos argumentos – em outras funcionalidades do projeto.
 
 \subsubsection{\underline{Struct \textbf{PROG}}}
 
@@ -42,33 +44,47 @@ Para a transição de informação entre o cliente e o servidor de um programa \
 \subsubsection{\underline{Novo Programa do Utilizador e Respectiva Terminação}}
 
 \subparagraph{Cliente:}
-A funcionalidade core do projeto, o execute, procede com a cálculo de um processo filho que estará conectado a um pipe que servirá para futuro intercâmbio de informação com os processos a correr. Prossegue-se então para a execução os comandos que serão introduzidos pelo utilizador seguido da função.\\
+A funcionalidade core do projeto, o execute, procede com a cálculo de um processo filho que estará conectado a um pipe que servirá para futuro intercâmbio de informação com os processos a correr. Prossegue-se então para a execução os comandos que serão introduzidos pelo utilizador seguido da função.
+Com a função \textbf{gettimeofday}, procedemos a atribuição do tempo inicial ao qual um programa começa a executar e passa-se essa informação através de uma struct previamente criada a fim de guardar o \textbf{PID} \textit{(do filho em causa)} e esse mesmo tempo para o processo pai através de um pipe anónimo e ao servidor atravès de um \textbf{FIFO}.\par
+Neste processo, também será enviado o nome do comando que foi executado com sucesso.\\
 
-Com a função gettimeofday, procedemos a atribuição do tempo inicial ao qual um programa começa a executar e passa-se essa informação através de uma struct previamente criada a fim de guardar o PID \textit{(do filho em causa)} e esse mesmo tempo para o processo pai através de um pipe anónimo e ao servidor atravès de um \textbf{FIFO}. Neste processo, também será enviado o nome do comando que foi executado com sucesso.\\
+Assim que o processo filho termina a sua execução, o processo pai (que estava em modo \textbf{WAIT}, ou seja, em modo espera) chama também a função gettimeofday para obter o tempo de término e com a informação recebida do filho, este calcula a diferença entre ambos – isto é, o tempo que o programa demorou a executar. Essa duração em milissegundos juntamente com o \textbf{PID} do processo filho que acabou de concluir serão então enviados para o servidor por \textbf{FIFO}.\\
 
-Assim que o processo filho termina a sua execução, o processo pai (que estava em modo \textbf{WAIT}, ou seja, em modo espera) chama também a função gettimeofday para obter o tempo de término e com a informação recebida do filho, este calcula a diferença entre ambos – isto é, o tempo que o programa demorou a executar. Essa duração em milissegundos juntamente com o PID do processo filho que acabou de concluir serão então enviados para o servidor por \textbf{FIFO}.\\
-
-Durante o correr das introduções deste pedaço de código, o utilizador é informado do PID do programa que está a correr e no final, o tempo de execução do mesmo. O utilizador também é informado de vários erros que posso acontecer durante a execução.
+Durante o correr das introduções deste pedaço de código, o utilizador é informado do \textbf{PID} do programa que está a correr e no final, o tempo de execução do mesmo. O utilizador também é informado de vários erros que posso acontecer durante a execução.
 
 
 \subparagraph{Servidor:}
 
-Para simplificar o processamento de informação dos vários programas que estão a execução, criou-se um array store que vai armazenar em cada índice struct prog. Tendo este array, inicializamos a leitura do PID enviado e vai consultar se este já existe dentro de algum índice do store. Se encontrado, quer dizer que o programa em questão já terminou; se não encontrar, armazena-o. 
+Para simplificar o processamento de informação dos vários programas que estão a execução, criou-se um array store que vai armazenar em cada índice struct prog. Tendo este array, inicializamos a leitura do \textbf{PID} enviado e vai consultar se este já existe dentro de algum índice do store. Se encontrado, quer dizer que o programa em questão já terminou; se não encontrar, armazena-o. 
 
 \subsection{Consulta dos Programas em Execução}
 A função status quais são os programas que estão a executar e o seu tempo até ao momento (milisegundos). Os resultados serão apresentados ao utilizador pelo cliente, listados um por linha.
 
-\subsubsection{Status: Cliente}
+\subparagraph{\underline{Store}}
 
-Quando é lido o comando status, abre-se um pipe onde a informação passada por este será feita em struct prog\footnote{Neste caso, decidiu-se comunicar com o servidor pois este está sempre com um processo de leitura direcionado à informação no formato da struct prog.} onde seguirá o comando ‘status’ para que o servidor reconheça qual o próximo passo a executar. Dado como terminado o reconhecimento dos programas a executar pelo lado do servidor, o cliente lê toda a data enviada e imprime no standard output o PID, o nome do programa e o seu tempo de execução até ao momento.
+\subparagraph{Cliente:}
+
+Quando é lido o comando status, abre-se um pipe onde a informação passada por este será feita em \textbf{struct prog}\footnote{Neste caso, decidiu-se comunicar com o servidor pois este está sempre com um processo de leitura direcionado à informação no formato da struct prog.} onde seguirá o comando ‘status’ para o servidor então processar o código associado a esta função. Dado como terminado o reconhecimento dos programas a executar pelo lado do servidor, o cliente lê toda a data enviada e imprime no standard output o \textbf{PID}, o nome do programa e o seu tempo de execução até ao momento.
 
 
-\subsubsection{Status: Servidor}
+\subparagraph{Servidor:}
 
-Foi pedido ao servidor o tempo de execução do programa até ao momento e para tal, usa-se a função gettimeofday (como visto previamente). Procedemos com a abertura de um pipe para o cliente onde será enviada a informação pedida pelo mesmo, desta vez só usando strings\footnote{Quando estabelecidas conexões do servidor para o cliente, o pipe não está dependente de structs. Então, com isto em mente, procurou-se usar strings para o envio desta mesma informação pois facilita o processo em causa.}.
+Foi pedido ao servidor o tempo de execução do programa até ao momento e para tal, usa-se a função gettimeofday (como visto previamente). Procedemos com a abertura de um pipe para o cliente onde será enviada a informação pedida pelo mesmo, desta vez só usando \textbf{strings}\footnote{Quando estabelecidas conexões do servidor para o cliente, o pipe não está dependente de structs. Então, com isto em mente, procurou-se usar strings para o envio desta mesma informação pois facilita o processo em causa.}.
 Com o array store passado na função, é feito o cálculo dos vários programas armazenados em struct, sendo depois formatado numa string e enviado pelo pipe acima criado. Depois do ciclo ser dado como terminado, o processo é encerrado com o encerramento desse mesmo pipe e o cliente terá acesso a informação pedida, se nenhum erro ocorrer.\\
 
+\newpage
+
+\section{Funcionalidades Avançadas}
+\subsection{Execução Encadeada de Programas}
+\subsection{Armazenamento de Informação sobre Programas Terminados}
+
+\subparagraph{Cliente:} Quando o utilizador fornece ao cliente uma das duas opções de execução, este prepara a informação necessária numa \textbf{struct prog} para o servidor avaliar o rumo a tomar. Finalizando o processo, é enviada outra struct com o \textbf{PID} e o tempo de execução.
+
+\subparagraph{Servidor:} Se o servidor não corresponder a nenhuma opção \textit{(status, stats-x e kill}, então vai usar o PID recebido previamente do cliente para verificar se este é um programa novo ou é um programa que terminou \textit{(através de comparações feitas com as posições do array \textbf{store})}.\par
+Tendo o programa encontrado o seu término, é criado um ficheiro na diretoria fornecida pelo utilizador ao executar o monitor. Este ficheiro contém a informçaão fornecida atravès da \textbf{struct}, isto é, os comandos e o tempo de execução e cujo nome é o \textbf{PID} do programa em questão.
+\subsection{Consulta de Programas Terminados}
 
 \end{document}
+
 
 
