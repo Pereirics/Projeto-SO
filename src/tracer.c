@@ -16,7 +16,7 @@
 
 int main(int argc, char **argv) {
     int fd_write, fd_read, bytes_read, bytes_written, res;
-    char *store[MAX_TOKENS];
+    char* store[MAX_TOKENS];
     char cmd[MAX_TOKENS];
     char buffer[100];
     struct prog st;
