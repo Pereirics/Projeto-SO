@@ -13,7 +13,7 @@ Here is a how the program should be used:
 3. Create folder where you will store the **PIDs** of the programs that have finished executing.
 4. To start running the server execute **./monitor (path to the folder created)**.
 5. To start a client execute **./tracer (option)**.
-	5.1 We can do **./tracer execute -u (string with the command)** which will run the command as in was executed in the bash.
+	1. We can do **./tracer execute -u (string with the command)** which will run the command as in was executed in the bash.
 	<p align="center">
   	  <img src="docs/assets/images/execute-u.png" alt="Execute U">
 	</p>
