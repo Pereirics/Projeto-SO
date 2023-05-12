@@ -12,7 +12,9 @@
 \title{Rastreamento e Monitorização da Execução de Programas\\
 \Large Universidade do Minho}
 
-\author{Miguel António Vaz Pinto Pereira (a72161)\\João Luís da Cruz Pereira (a95375)\\ Maria Helena Alves Machado Marques Salazar (a75635)}
+\author{Miguel António Vaz Pinto Pereira (a72161)\\
+João Luís da Cruz Pereira (a95375)\\
+Maria Helena Alves Machado Marques Salazar (a75635)\\}
 \date{April, May 2023}
 
 \begin{document}
@@ -105,16 +107,46 @@ O código responsável pela execução da pipeline calcula também o tempo de ex
 
 \subparagraph{Cliente:} Quando o utilizador fornece ao cliente uma das duas opções de execução, este prepara a informação necessária numa \textbf{struct prog} para o servidor avaliar o rumo a tomar. Finalizando o processo, é enviada outra struct com o \textbf{PID} e o tempo de execução.
 
-\subparagraph{Servidor:} Se o servidor não corresponder a nenhuma opção \textit{(status, stats-x e kill}, então vai usar o PID recebido previamente do cliente para verificar se este é um programa novo ou é um programa que terminou \textit{(através de comparações feitas com as posições do array \textbf{store})}.\par
+\subparagraph{Servidor:} Se o servidor não corresponder a nenhuma opção \textit{(status, stats-x e kill)}, então vai usar o PID recebido previamente do cliente para verificar se este é um programa novo ou é um programa que terminou \textit{(através de comparações feitas com as posições do array \textbf{store})}.\par
 Tendo o programa encontrado o seu término, é criado um ficheiro na diretoria fornecida pelo utilizador ao executar o monitor. Este ficheiro contém a informçaão fornecida atravès da \textbf{struct}, isto é, os comandos e o tempo de execução e cujo nome é o \textbf{PID} do programa em questão.
 \newpage
 
 \subsection{Consulta de Programas Terminados}
+
+\subsubsection{\underline{Stats-Time}}
+\subparagraph{Cliente:} Na funcionalidade stats-time, o utilizador passa ao cliente uma série de \textbf{PIDs} onde quer que seja calculado o tempo total de execução nos programas dos mesmos.
+No lado do cliente é verificado a opção e é passado ao servidor uma struct com o comando \textbf{“stats-time”} e no campo args seguem os \textbf{PIDs} passados pelo utilizador.\par
+Todo o processo é efetuado no servidor e no final, o cliente recebe a string previamente formatada através de um \textbf{FIFO}, optando assim por uma solução mais simples em vez de voltar-se a utilizar a struct.
+
+\subparagraph{Servidor:} É enviado ao servidor uma \textbf{struct prog} e essa é lida, entrando na opção stats-time onde a função \textbf{\texttt{status\char`_time}} será chamada para execução. \par
+Com isto, percorre-se os \textbf{PIDs} fornecidos, onde segue a abertura do ficheiro correspondente a cada um deles. A leitura é efetuada byte a byte para se conseguir encontrar o final da linha, sabendo assim quando termina o valor em milisegundos do seu tempo de execução \textit{(que se encontra na primeira linha)} e adicionar ao total. Quando a primeira linha termina, o ciclo é interrompido pois já foi obtida a informação pedida.\par
+No final de percorrer todos os ficheiros dos \textbf{PIDs}, passa-se o valor total em formato string ao cliente que por sua vez mostra a mesma recebida ao utilizador.
+
+\subsubsection{\underline{Stats-Command}}
+A funcionalidade \textbf{stats-command} partilha uma certa similaridade com a funcionalidade \textbf{stats-time}. Porém, a nova recebe mais um argumento para a sua execução proceder conforme o esperado.
+
+\subparagraph{Cliente:}
+É passado ao servidor o comando \textbf{stats-command} na \textbf{struct prog} no seu respetivo campo, enquanto que no campo \textit{args}, na primeira posição do array vai o comando a ser procurado enquanto que no resto do array segue os \textbf{PIDs} onde queremos procurar o comando em questão.\par
+Terminada a execução por parte do servidor, o cliente recebe uma string formatada para mostrar ao utilizador o resultado pretendido.
+
+\subparagraph{Servidor:}
+Recebida a \textbf{struct prog} necessária, este na opção correta e chama a respetiva função. Em seguida, repete-se o processo descrito em cima em relação \textbf{PIDs}, abrindo os respectivos ficheiros. A leitura é na mesma efetuada byte a byte, porém o processo não termina na primeira linha pois é sempre comparado o valor lido nessa linha com o comando pretendido \textit{(na primeira linha lê o valor em milisegundos e compara com o comando na mesma, e certamente que não é obtida nenhuma igualdade)}.\par
+Sendo o valor lido equivalente ao comando, é incrementado total o número de vezes quantas aquelas o comando em si é repetido nos \textbf{PIDs} previamente enviados.
+Lido o último \textbf{PID}, a informação obtida é então formatada numa string e de novo, através de um \textbf{FIFO} é enviada ao cliente.
+
+\subsubsection{\underline{Status-Uniq}}
+No caso do stats-uniq, a similaridade é maior com a primeira funcionalidade descrita na Consulta de Programas Terminados, visto que o campo \textit{args} da \textbf{struct prog} só leva os \textbf{PIDs} e no campo \textit{cmd} leva o \textbf{stats-uniq}.
+
+\subparagraph{Cliente:} Como descrito em cima, é enviado ao servidor uma \textbf{struct prog} com as informações pedidas para o servidor atuar sobre a função definida como \textbf{stats-uniq}.
+Visado o término da função no servidor, o cliente recebe as strings dos comandos executados separados por um \textit{\textbackslash n} e apresenta-os ao utilizador.
+
+\subparagraph{Servidor:}
+Semelhante as outras duas funções acima descritas, serão percorridos os \textbf{PIDs} fornecidos pelo cliente, abrir os ficheiros correspondentes e verificar os comandos guardados em cada um deles. Com a ajuda de um array \textbf{store}, onde serão armazenados os comandos dos \textbf{PIDs} lidos, serão introduzidos os comandos uma única vez (mesmo havendo repetição). A leitura para obtenção do comando é de novo efetuada byte a byte, ignorando a primeira linha pois esta está reservada para o tempo de execução.\par
+No caso de o \textbf{store} estar vazio, adiciona-se imediatamente o comando em questão; senão tem-se que percorrer o array para garantir que esse comando já não está armazenado numa posição.
+Com o término da leitura de \textbf{PIDs}, é passado ao cliente os comandos guardados \textit{(depois de convertidos e formatados em string)}, um a um, através de um \textbf{FIFO}. 
+
+
 \newpage
 \section{Conclusão}
 \lipsum[1-3]
 \end{document}
-
-
-
-
