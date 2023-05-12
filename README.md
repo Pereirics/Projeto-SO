@@ -17,4 +17,8 @@ Here is a how the program should be used:
 	<p align="center">
   	  <img src="docs/assets/images/execute-u.png" alt="Execute U">
 	</p>
+    2. **./tracer status** shows the user all the running programs and their execution time until the moment
+    <p align="center">
+  	  <img src="docs/assets/images/status.png" alt="Status">
+	</p>
 
