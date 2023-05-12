@@ -33,7 +33,7 @@ Here is a how the program should be used:
     <p align="center">
   	  <img src="docs/assets/images/stats-command.png" alt="Stats Command">
 	</p>
-    6. __./tracer stats-uniq (PIDs separated by a space)__, this will give you, one by line, the name of the commands that were executed in those PIDs you give to the client.
+    6. **./tracer stats-uniq (PIDs separated by a space)**, this will give you, one by line, the name of the commands that were executed in those PIDs you give to the client.
     <p align="center">
   	  <img src="docs/assets/images/stats-uniq.png" alt="Stats Uniq">
 	</p>
