@@ -18,5 +18,3 @@ Here is a how the program should be used:
   	  <img src="docs/assets/images/execute-u.png" alt="Execute U">
 	</p>
 
-	![Execute U](docs/assets/images/execute-u.png)
-
