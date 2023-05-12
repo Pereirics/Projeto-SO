@@ -390,7 +390,7 @@ int main(int argc, char** argv) {
             _exit(1);
         }
 
-        // This keeps the server running as it will block if no reading file descriptors are open
+        // This keeps the server running as the file descriptor will block if no reading file descriptors are open
         fd_write = open("pipe_to_server", O_WRONLY); 
         if (fd_write == -1) {
             perror("Error opening pipe_to_server");
