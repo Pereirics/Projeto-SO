@@ -14,5 +14,6 @@ Here is a how the program should be used:
 4. To start running the server execute **./monitor (path to the folder created)**.
 5. To start a client execute **./tracer (option)**.
 	5.1 We can do **./tracer execute -u (string with the command)** which will run the command as in was executed in the bash.
+	
 	![Execute U](docs/assets/images/execute-u.png)
 
