@@ -76,7 +76,6 @@ void stats_time(char args[][7], char* folder) {
     for(int i=0; i<256 && strcmp(args[i], "") != 0; i++) {
         
         // Formats string that gives the path to the PID file
-        str[64];
         res = snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
         if (res < 0) {
             perror("Error formatting string.");
@@ -121,7 +120,6 @@ void stats_time(char args[][7], char* folder) {
     }
 
     // Formats the string that will be sent to the server
-    str[32];
     res = snprintf(str, sizeof(str), "Total execution time is %d ms\n", total);
     if (res < 0) {
         perror("Error formatting string.");
@@ -155,7 +153,6 @@ void stats_command(char* cmd, char args[][7], char* folder) {
     for(int i=0; i<255 && strcmp(args[i], "") != 0; i++) {
         
         // Formats the string that gives the path to the file with the PID name
-        str[64];
         res = snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
         if (res < 0) {
             perror("Error formatting string.");
@@ -211,7 +208,6 @@ void stats_command(char* cmd, char args[][7], char* folder) {
     }
 
     // Formats the string with the total number of times the command was executed in those PIDs
-    str[64];
     res = snprintf(str, sizeof(str), "%s was executed %d times\n", cmd, total);
     if (res < 0) {
         perror("Error formatting string.");
@@ -238,7 +234,7 @@ void stats_uniq(char args[][7], char* folder) {
     int fd, res, bytes_written;
     char c, str[64];
     char buffer[100] = "";
-    int total = 0, pos = 0, pos_store = 0, bytes_read=0, line;
+    int pos = 0, pos_store = 0, bytes_read = 0, line;
     char store[100][20];
 
     // Initializes the array to an empty string in all positions
@@ -250,7 +246,6 @@ void stats_uniq(char args[][7], char* folder) {
     for(int i=0; i<256 && strcmp(args[i], "") != 0; i++) {
         
         // Formats the string that gives the path to the file with the PID name
-        str[64];
         res = snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
         if (res < 0) {
             perror("Error formatting string.");
@@ -365,7 +360,7 @@ int main(int argc, char** argv) {
 
     int fd_read, fd_write, fd_pids;
     int res, bytes_read, bytes_written;
-    int flag, pos, pos_store=0;
+    int flag, pos_store=0;
     prog buffer, store[100];
 
     // Checks if the number of arguments is correct
