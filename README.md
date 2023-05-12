@@ -37,4 +37,4 @@ Here is a how the program should be used:
     <p align="center">
   	  <img src="docs/assets/images/stats-uniq.png" alt="Stats Uniq">
 	</p>
-
+6. To terminate the server, use **./tracer kill** which will close the pipes and unlink the fifos, stoping the server from running
