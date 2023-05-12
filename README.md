@@ -13,12 +13,28 @@ Here is a how the program should be used:
 3. Create folder where you will store the **PIDs** of the programs that have finished executing.
 4. To start running the server execute **./monitor (path to the folder created)**.
 5. To start a client execute **./tracer (option)**.
-	1. We can do **./tracer execute -u (string with the command)** which will run the command as in was executed in the bash.
+	1. We can do **./tracer execute -u (string with the command)** which will run the command as if it was executed in the bash. It also informs the user about the PID of the program when it starts running and also its execution time when it ends.
 	<p align="center">
   	  <img src="docs/assets/images/execute-u.png" alt="Execute U">
 	</p>
     2. **./tracer status** shows the user all the running programs and their execution time until the moment
     <p align="center">
   	  <img src="docs/assets/images/status.png" alt="Status">
+	</p>
+    3. **./tracer execute -p (string with pipeline)** which will run the pipeline as if it was executed in the bash. It gives the same information to the user as the command **execute -u**.
+    <p align="center">
+  	  <img src="docs/assets/images/execute-p.png" alt="Execute P">
+	</p>
+    4. **./tracer stats-time (PIDs separated by a space)**, this will give you the total time of execution of those PIDs you give to the client.
+    <p align="center">
+  	  <img src="docs/assets/images/stats-time.png" alt="Stats Time">
+	</p>
+    5. **./tracer stats-command (name of command) (string with PIDs)**, this will give you the number of times the command was executed in those PIDs you give to the client.
+    <p align="center">
+  	  <img src="docs/assets/images/stats-command.png" alt="Stats Command">
+	</p>
+    6. **./tracer stats-uniq (PIDs separated by a space)**, this will give you, one by line, the name of the commands that were executed in those PIDs you give to the client.
+    <p align="center">
+  	  <img src="docs/assets/images/stats-uniq.png" alt="Stats Uniq">
 	</p>
 
