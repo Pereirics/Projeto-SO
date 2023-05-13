@@ -108,6 +108,7 @@ Com o array store passado na função, é feito o cálculo dos vários programas
 
 \subparagraph{Cliente:} Inicialmente abre-se um \textbf{FIFO} onde irá ser escrito, tal como no resto das funcionalidades deste programa, uma \textbf{struct prog} que guarda o \textbf{PID} do pipeline \textit{(no caso, \textbf{PID} do processo pai)}, os comandos \textit{(provenientes do utilizador)}, e o ‘start’ \textit{(o valor resultante da função gettimeofday)}. Consecutivamente, envia-se a informação guardada para o servidor pelo pipe. Verificado o envio, o utilizador recebe notificação sobre o ID do processo da pipeline em execução - \textbf{PID} do processo pai.\\
 
+\newpage
 Para executar as funções solicitadas pelo utilizador, o grupo implementou um loop que itera sobre um array de arrays de tamanho dois, onde será criado um pipe em cada posição do arrray usando esse mesmo par. Para uma melhor organização do código, o loop é dividido em três casos distintos:
 
 \subsubsection{\underline{Primeiro Caso}}
