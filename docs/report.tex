@@ -1,29 +1,49 @@
-\documentclass{report}
-\usepackage{graphicx} % Required for inserting images
-\usepackage{makeidx}
-\usepackage{setspace}
-\usepackage{authblk}
-\usepackage{pdfpages}
+\documentclass[11.5pt,a4paper]{report}
+\usepackage[portuges]{babel}
+\usepackage[utf8]{inputenc} % define o encoding usado texto fonte (input)--usual "utf8" ou "latin1
+\usepackage{graphicx} %permite incluir graficos, tabelas, figuras
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{multicol}
+\usepackage{indentfirst}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{enumitem}
+
 
 
 \usepackage[margin=1.2in]{geometry}
 \usepackage{geometry}
 
+
 \title{Rastreamento e Monitorização da Execução de Programas\\
-\Large Universidade do Minho}
+                        \textbf{Grupo 25\\
+                        }}
 
 \author{João Luís da Cruz Pereira (a95375) \and
 Maria Helena Alves Machado Marques Salazar (a75635) \and
 Miguel António Vaz Pinto Pereira (a72161)\\}
-\date{April, May 2023}
+\date{\today}
 
 \begin{document}
-\spacing{1.25}
+\begin{minipage}{0.9\linewidth}
+        \centering
+		\includegraphics[width=0.4\textwidth]{figs/uminho.png}\par\vspace{1cm}
+                \href{https://www.uminho.pt/PT}
+		{\scshape\LARGE Universidade do Minho} \par
+		\vspace{0.6cm}
+                \href{https://lcc.di.uminho.pt}
+		{\scshape\Large Licenciatura em Ciências da Computação} \par
+		\maketitle
+	\end{minipage}
 
 \maketitle
 \tableofcontents
 \newpage
-\section*{Introdução}
+\chapter{Introdução}
 Através deste projeto, pretendemos implementar um serviço de monitorização eficaz de um ou vários programas.\\
 
 A monitorização e rastreio da execução de programas são aspetos críticos do desenvolvimento e manutenção de software, que consistem na observação do comportamento do programa para identificar erros, problemas de desempenho, entre outros. Uma das formas eficazes de rastrear a execução de programas é através de chamadas de sistema, que possibilitam ao programa solicitar serviços ao \textbf{kernel} do sistema operacional e interagir com o sistema operativo subjacente de forma segura e padronizada.\\
@@ -52,6 +72,7 @@ Com isto em mente, recorreu-se a uma função tokenizer, aonde se dá a separaç
 
 Para a transição de informação entre o cliente e o servidor de um programa \textit{(entre os pipes e, por continuidade, as pipelines)}, procedeu-se a criação de uma struct que armazena todos os dados aos quais pretendemos trabalhar com; desde o comando em si, argumentos associados, o tempo de iniciação do processo e respetivo tempo de execução. Deste modo, haverá menos perda de informação e esta estará organizada de uma maneira mas sucinta.
 
+\newpage
 \subsection{Novo Programa do Utilizador e Respectiva Terminação}
 
 \subparagraph{Cliente:}
@@ -76,11 +97,12 @@ Para simplificar o processamento de informação dos vários programas que estã
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.6\textwidth]{figs/execute-u.png}
+    \includegraphics[width = 0.4\textwidth]{figs/execute-u.png}
     \caption{Demonstração da execução do execute-u.}
     \label{f}
 \end{figure}
 
+\newpage
 \subsection{Consulta dos Programas em Execução}
 A função status quais são os programas que estão a executar e o seu tempo até ao momento (milisegundos). Os resultados serão apresentados ao utilizador pelo cliente, listados um por linha.
 
@@ -113,10 +135,11 @@ Para executar as funções solicitadas pelo utilizador, o grupo implementou um l
 No primeiro caso, ou seja, no caso de ser o primeiro programa, é criado um pipe que estabelece comunicação entre este e o segundo programa. Para tal, é necessário alterar o file descriptor 1 para o file descriptor de escrita do pipe, de forma a permitir que o output do primeiro comando seja redirecionado para o próximo pipe em vez de ser escrito diretamente no \textbf{STDOUT}.\par
 Após a criação do processo filho, este é responsável pela execução do comando fornecido enquanto o processo pai continua a executar o loop. No entanto, caso ocorra algum erro durante a execução do comando pelo processo filho, a substituição completa do código deste pela chamada ao sistema \textbf{execvp} não ocorrerá, e o programa terminará.
 
-\newpage
 \subsection{Segundo Caso}
 No segundo caso, isto é, no último programa da pipeline, o processo pai criará um novo filho, seguindo um procedimento semelhante ao anteriormente descrito. A diferença reside no facto de que, ao contrário do primeiro caso, o descritor de leitura deve ser alterado em vez do descriptor de escrita, uma vez que o objetivo é ler o output do pipe em vez do \textbf{STDIN}. Para esse fim, a \textbf{função dup2()} é novamente utilizada.\par
 Neste caso, é mantido o file descriptor de escrita para o \textbf{STDOUT} pois estamos peranto o último programa a ser executado.
+
+\newpage
 
 \subsection{Terceiro Caso}
 No terceiro caso, ou seja, para os programas intermédios, é necessário alterar ambos os descritores de ficheiros, uma vez que não se pretende que este pipe leia do \textbf{STDIN} ou escreva no \textbf{STDOUT}, mas sim no descritor de leitura do pipe anterior e no descritor de escrita do pipe atual, respetivamente. Para realizar esta operação, é necessário utilizar a system call \textbf{dup2} duas vezes, para alterar os descritores de ficheiros adequadamente.\\
@@ -132,7 +155,6 @@ O código responsável pela execução da pipeline calcula também o tempo de ex
     \label{f}
 \end{figure}
 
-\newpage
 \section{Armazenamento de Informação sobre Programa\\Terminados}
 
 \subparagraph{Cliente:} Quando o utilizador fornece ao cliente uma das duas opções de execução, este prepara a informação necessária numa \textbf{struct prog} para o servidor avaliar o rumo a tomar. Finalizando o processo, é enviada outra struct com o \textbf{PID} e o tempo de execução.
@@ -154,7 +176,6 @@ Tendo o programa encontrado o seu término, é criado um ficheiro na diretoria f
 No lado do cliente é verificado a opção e é passado ao servidor uma struct com o comando \textbf{“stats-time”} e no campo args seguem os \textbf{PIDs} passados pelo utilizador.\par
 Todo o processo é efetuado no servidor e no final, o cliente recebe a string previamente formatada através de um \textbf{FIFO}, optando assim por uma solução mais simples em vez de voltar-se a utilizar a struct.
 
-\newpage
 \subparagraph{Servidor:} É enviado ao servidor uma \textbf{struct prog} e essa é lida, entrando na opção stats-time onde a função \textbf{\texttt{status\char`_time}} será chamada para execução. \par
 Com isto, percorre-se os \textbf{PIDs} fornecidos, onde segue a abertura do ficheiro correspondente a cada um deles. A leitura é efetuada byte a byte para se conseguir encontrar o final da linha, sabendo assim quando termina o valor em milisegundos do seu tempo de execução \textit{(que se encontra na primeira linha)} e adicionar ao total. Quando a primeira linha termina, o ciclo é interrompido pois já foi obtida a informação pedida.\par
 No final de percorrer todos os ficheiros dos \textbf{PIDs}, passa-se o valor total em formato string ao cliente que por sua vez mostra a mesma recebida ao utilizador.
@@ -180,12 +201,11 @@ Lido o último \textbf{PID}, a informação obtida é então formatada numa stri
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.8\textwidth]{figs/stats-command.png}
+    \includegraphics[width = 0.3\textwidth]{figs/stats-command.png}
     \caption{Demonstração da execução da stats-command.}
     \label{f}
 \end{figure}
 
-\newpage
 \subsection{Status-Uniq}
 No caso do stats-uniq, a similaridade é maior com a primeira funcionalidade descrita na Consulta de Programas Terminados, visto que o campo \textit{args} da \textbf{struct prog} só leva os \textbf{PIDs} e no campo \textit{cmd} leva o \textbf{stats-uniq}.
 
@@ -205,7 +225,7 @@ Com o término da leitura de \textbf{PIDs}, é passado ao cliente os comandos gu
 \end{figure}
 
 \newpage
-\section*{Conclusão}
+\chapter{Conclusão}
 Com o desenvolvimento do projeto, conseguimos cumprir todas as funcionalidades básicas e avançadas propostas. Segundo os testes que nós efetuamos, não encontramos falhas nas funcionalidades mas as mesmas podem existir de qualquer das formas.\\
 
 Em termos de melhorias possíveis, podiamos tentar com que quando o utilizador por exemplo executa \textbf{./tracer execute -u ls} o programa retornasse erro pois não colocou o programa a executar dentro de aspas. Existe tratamento de erros para quando é colocado \textbf{./tracer execute -u ls -l} devido ao número errado de argumentos mas com o número correeto não.\par
@@ -215,3 +235,4 @@ Foi um trabalho interessante que envolveu toda a matéria usada nas aulas práti
 
 
 \end{document}
+
