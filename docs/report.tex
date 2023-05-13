@@ -1,4 +1,4 @@
-\documentclass[11.5pt,a4paper]{report}
+\documentclass[11pt,a4paper]{report}
 \usepackage[portuges]{babel}
 \usepackage[utf8]{inputenc} % define o encoding usado texto fonte (input)--usual "utf8" ou "latin1
 \usepackage{graphicx} %permite incluir graficos, tabelas, figuras
@@ -57,7 +57,7 @@ Espera-se que no término do desenvolvimento feito pelo grupo, todas as funciona
 \chapter{Funcionalidades Básicas}
 \section{Execução de programas por parte do utilizador}
 
-Em \textbf{geral,}\\
+Em geral,
 
 Para prosseguir com a execução do programa em questão, definiu-se uma função execute onde se processa a inicialização com um \textbf{fork} \textit{(para permitir a execução sem um término prévio do programa)} e o comando procede com os respectivos argumentos.\par
 Foram também escritas mensagens de erro caso aconteçam durante o correr do código, desde a impossibilidade de criação de um processo filho à execução através do \textbf{execvp}.\par
@@ -87,6 +87,7 @@ Durante o correr das introduções deste pedaço de código, o utilizador é inf
 No seguimento de obtenção de uma melhor dinâmica de consulta de programas ainda em execução \textit{(e suas respectivas informações}, decidiu-se proceder a criação de um array chamado store que armazena em cada posição uma \textbf{struct prog} com esses mesmo dados. Sendo assim, torna-se uma das peças chave no código do projeto.
 \subsubsection{\underline{Server Block}}
 Para manter o servidor a correr, foi aberto um descritor de escrita que se mantém bloqueado enquanto não houver descritores de leitura abertos, mantendo assim o servidor a correr para "sempre".
+
 \subsubsection{\underline{Kill}}
 Para evitar possíveis consequências \textit{(como o não fazer unlink e close)} com o fechar do servidor usando o \textbf{CTRL + C}, decidiu-se criar o \textbf{comando kill} para que este ponha um fim ao estado acima definido como \textbf{Server Block}.\\
 Este comando interrompe o ciclo de leitura com um break, obrigando o processo a entrar na fase de encerramento dos descritores e unlink dos pipes.
@@ -97,7 +98,7 @@ Para simplificar o processamento de informação dos vários programas que estã
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.4\textwidth]{figs/execute-u.png}
+    \includegraphics[width = 0.8\textwidth]{figs/execute-u.png}
     \caption{Demonstração da execução do execute-u.}
     \label{f}
 \end{figure}
@@ -118,7 +119,7 @@ Com o array store passado na função, é feito o cálculo dos vários programas
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.6\textwidth]{figs/status.png}
+    \includegraphics[width = 0.8\textwidth]{figs/status.png}
     \caption{Demonstração da execução do status.}
     \label{f}
 \end{figure}
@@ -164,7 +165,7 @@ Tendo o programa encontrado o seu término, é criado um ficheiro na diretoria f
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.8\textwidth]{figs/Screenshot20from202023-05-132010-06-44.png}
+    \includegraphics[width = 1\textwidth]{figs/Screenshot20from202023-05-132010-06-44.png}
     \caption{Demonstração da funcionalidade e respetivos ficheiros.}
     \label{f}
 \end{figure}
@@ -182,7 +183,7 @@ No final de percorrer todos os ficheiros dos \textbf{PIDs}, passa-se o valor tot
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.8\textwidth]{figs/stats-time.png}
+    \includegraphics[width = 1\textwidth]{figs/stats-time.png}
     \caption{Demonstração da execução da stats-time.}
     \label{f}
 \end{figure}
@@ -194,6 +195,8 @@ A funcionalidade \textbf{stats-command} partilha uma certa similaridade com a fu
 É passado ao servidor o comando \textbf{stats-command} na \textbf{struct prog} no seu respetivo campo, enquanto que no campo \textit{args}, na primeira posição do array vai o comando a ser procurado enquanto que no resto do array segue os \textbf{PIDs} onde queremos procurar o comando em questão.\par
 Terminada a execução por parte do servidor, o cliente recebe uma string formatada para mostrar ao utilizador o resultado pretendido.
 
+\newpage
+
 \subparagraph{Servidor:}
 Recebida a \textbf{struct prog} necessária, este na opção correta e chama a respetiva função. Em seguida, repete-se o processo descrito em cima em relação \textbf{PIDs}, abrindo os respectivos ficheiros. A leitura é na mesma efetuada byte a byte, porém o processo não termina na primeira linha pois é sempre comparado o valor lido nessa linha com o comando pretendido \textit{(na primeira linha lê o valor em milisegundos e compara com o comando na mesma, e certamente que não é obtida nenhuma igualdade)}.\par
 Sendo o valor lido equivalente ao comando, é incrementado total o número de vezes quantas aquelas o comando em si é repetido nos \textbf{PIDs} previamente enviados.
@@ -201,7 +204,7 @@ Lido o último \textbf{PID}, a informação obtida é então formatada numa stri
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width = 0.3\textwidth]{figs/stats-command.png}
+    \includegraphics[width = 1\textwidth]{figs/stats-command.png}
     \caption{Demonstração da execução da stats-command.}
     \label{f}
 \end{figure}
