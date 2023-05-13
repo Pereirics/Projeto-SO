@@ -9,10 +9,11 @@ We will be using named pipes and unnamed pipes to communicate between files and 
 Here is a how the program should be used:
 
 1. Open at least two terminals, one for the monitor (server) and one for the tracer (client). You can have multiple clientes running at the same time.
-2. After navigating to the bin folder execute **make**.
-3. Create folder where you will store the **PIDs** of the programs that have finished executing.
-4. To start running the server execute **./monitor (path to the folder created)**.
-5. To start a client execute **./tracer (option)**.
+2. Create folder where you will store the **PIDs** of the programs that have finished executing.
+3. Execute **make** to compile all files.
+4. Navigate to the **bin** folder (which is where the executables will be).
+5. To start running the server execute **./monitor (path to the folder created)**.
+6. To start a client execute **./tracer (option)**.
 	1. We can do **./tracer execute -u (string with the command)** which will run the command as if it was executed in the bash. It also informs the user about the PID of the program when it starts running and also its execution time when it ends.
 	<p align="center">
   	  <img src="docs/assets/images/execute-u.png" alt="Execute U">
@@ -37,4 +38,4 @@ Here is a how the program should be used:
     <p align="center">
   	  <img src="docs/assets/images/stats-uniq.png" alt="Stats Uniq">
 	</p>
-6. To terminate the server, use **./tracer kill** which will close the pipes and unlink the fifos, stoping the server from running
+7. To terminate the server, use **./tracer kill** which will close the pipes and unlink the fifos, stoping the server from running
