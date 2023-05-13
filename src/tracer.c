@@ -274,6 +274,10 @@ int main(int argc, char **argv) {
                 _exit(1);
             }
         }
+        else {
+            perror("Error in the number of arguments.");
+            _exit(1);
+        }
     }
     // Executes the option stats-uniq that shows the user the names of the programs that were executed in the PIDs given (only shows one of each command)
     else if (!strcmp(argv[1], "stats-uniq")) {

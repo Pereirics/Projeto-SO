@@ -25,13 +25,13 @@ void stats_time(char args[][7], char* folder) {
         res = snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
         if (res < 0) {
             perror("Error formatting string.");
-            return;
+            _exit(1);
         }
 
         // Open the file descriptor of the file with the PID name (Reading)
         fd = open(str, O_RDONLY);
         if (fd == -1) {
-            perror("Error opening file with PID name.");
+            perror("Error opening file with PID name."); // This will happen when the user inserts a PID that doesn't exist
             return;
         }
         
@@ -44,7 +44,7 @@ void stats_time(char args[][7], char* folder) {
         }
         if (bytes_read == -1) {
             perror("Error reading from file with PID name.");
-            return;
+            _exit(1);
         }
 
         // Sums the ms of the file to the total amount
@@ -75,7 +75,7 @@ void stats_time(char args[][7], char* folder) {
     // Sends the string to the server
     bytes_written = write(fd, str, strlen(str)); 
     if (bytes_written == -1) {
-        perror("Error writinf to client.");
+        perror("Error writing to client.");
         return;
     }
 
@@ -102,13 +102,13 @@ void stats_command(char* cmd, char args[][7], char* folder) {
         res = snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
         if (res < 0) {
             perror("Error formatting string.");
-            return;
+            _exit(1);
         }
 
         // Opens the file descriptor of the file with the PID name (Reading)
         fd = open(str, O_RDONLY);
         if (fd == -1) {
-            perror("Error opening the file with PID name.");
+            perror("Error opening the file with PID name."); // This will happen when the user inserts a PID that doesn't exist
             return;
         }
         
@@ -135,14 +135,14 @@ void stats_command(char* cmd, char args[][7], char* folder) {
 
         if (bytes_read == -1) {
             perror("Error reading from file with PID name.");
-            return;
+            _exit(1);
         }
 
         // Closes the file descriptor of the file with the PID name
         res = close(fd);
         if (res == -1) {
             perror("Error closing file with PID name.");
-            return;
+            _exit(1);
         }
     }
 
@@ -150,28 +150,28 @@ void stats_command(char* cmd, char args[][7], char* folder) {
     fd = open("pipe_to_client", O_WRONLY);
     if (fd == -1) {
         perror("Error opening pipe_to_client.");
-        return;
+        _exit(1);
     }
 
     // Formats the string with the total number of times the command was executed in those PIDs
     res = snprintf(str, sizeof(str), "%s was executed %d times\n", cmd, total);
     if (res < 0) {
         perror("Error formatting string.");
-        return;
+        _exit(1);
     }
 
     // Sends the string to the client
     bytes_written = write(fd, str, strlen(str)); 
     if (bytes_written == -1) {
         perror("Error writing to client.");
-        return;
+        _exit(1);
     }
 
     // Closes the pipe to the client
     res = close(fd);
     if (res == -1) {
         perror("Error closing pipe_to_client.");
-        return;
+        _exit(1);
     }
 }
 
@@ -195,13 +195,13 @@ void stats_uniq(char args[][7], char* folder) {
         res = snprintf(str, sizeof(str), "%s%s.txt", folder, args[i]);
         if (res < 0) {
             perror("Error formatting string.");
-            return;
+            _exit(1);
         }
 
         // Opens a file descriptor of the file with the PID name (Reading)
         fd = open(str, O_RDONLY);
         if (fd == -1) {
-            perror("Error opening file with PID name.");
+            perror("Error opening file with PID name."); // This will happen when the user inserts a PID that doesn't exist
             return;
         }
 
@@ -267,7 +267,7 @@ void stats_uniq(char args[][7], char* folder) {
         res = close(fd);
         if (res == -1) {
             perror("Error closing file with PID name.");
-            return;
+            _exit(1);
         }
     }
 
@@ -275,7 +275,7 @@ void stats_uniq(char args[][7], char* folder) {
     fd = open("pipe_to_client", O_WRONLY);
     if (fd == -1) {
         perror("Error opening pipe_to_client.");
-        return;
+        _exit(1);
     }
 
     // Cycles through the array where the uniq commands were stored and writes them to the client, one by one
@@ -283,14 +283,14 @@ void stats_uniq(char args[][7], char* folder) {
         bytes_written = write(fd, store[i], strlen(store[i]));
         if (bytes_written == -1) {
             perror("Error writting to client.");
-            return;
+            _exit(1);
         }
 
         // Adds a '\n' so it only shows one by line
         bytes_written = write(fd, "\n", 1);
         if (bytes_written == -1) {
             perror("Error writing to client.");
-            return;
+            _exit(1);
         }
     }
 
@@ -298,6 +298,6 @@ void stats_uniq(char args[][7], char* folder) {
     res = close(fd);
     if (res == -1) {
         perror("Error closing pipe_to_client.");
-        return;
+        _exit(1);
     }
 }
