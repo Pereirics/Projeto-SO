@@ -70,7 +70,7 @@ Com isto em mente, recorreu-se a uma função tokenizer, aonde se dá a separaç
 
 \subsubsection{\underline{Struct \textbf{PROG}}}
 
-Para a transição de informação entre o cliente e o servidor de um programa \textit{(entre os pipes e, por continuidade, as pipelines)}, procedeu-se a criação de uma struct que armazena todos os dados aos quais pretendemos trabalhar com; desde o comando em si, argumentos associados, o tempo de iniciação do processo e respetivo tempo de execução. Deste modo, haverá menos perda de informação e esta estará organizada de uma maneira mas sucinta.
+Para a transição de informação entre o cliente e o servidor de um programa \textit{(entre os pipes e, por continuidade, FIFOs)}, procedeu-se a criação de uma struct que armazena todos os dados aos quais pretendemos trabalhar com; desde o comando em si, argumentos associados, o tempo de iniciação do processo e respetivo tempo de execução. Deste modo, haverá menos perda de informação e esta estará organizada de uma maneira mas sucinta.
 
 \newpage
 \subsection{Novo Programa do Utilizador e Respectiva Terminação}
@@ -228,20 +228,13 @@ Com o término da leitura de \textbf{PIDs}, é passado ao cliente os comandos gu
 \chapter{Conclusão}
 Com o desenvolvimento do projeto, conseguimos cumprir todas as funcionalidades básicas e avançadas propostas. Segundo os testes que nós efetuamos, não encontramos falhas nas funcionalidades mas as mesmas podem existir de qualquer das formas.\\
 
-<<<<<<< HEAD
-Em termos de melhorias possíveis, podiamos tentar com que quando o utilizador por exemplo executa \textbf{./tracer execute -u ls} o programa retornasse erro pois não colocou o programa a executar dentro de aspas. Existe tratamento de erros para quando é colocado \textbf{./tracer execute -u ls -l} devido ao número errado de argumentos mas com o número correto não.\par
-Outro problema é nas funções stats, no caso de o utilizador não inserir PIDs válidos aparece um erro no monitor (que continua a correr) mas no lado do tracer o utilizador ter que terminar com o programa à bruta, uma possível solução para isto seria do lado do monitor escrever a mensagem de erro no pipe fazendo assim com que o programa desbloqueasse e termina-se normalmente. Com mais algum tempo implementaríamos isto.
-=======
 Em termos de melhorias possíveis, podiamos tentar com que quando o utilizador por exemplo executa \textbf{./tracer execute -u ls} o programa retornasse erro pois não colocou o programa a executar dentro de aspas. Existe tratamento de erros para quando é colocado \textbf{./tracer execute -u ls -l} devido ao número errado de argumentos mas com o número correto não.\\
 
 Outro problema é nas funções stats, no caso de o utilizador não inserir PIDs válidos aparece um erro no monitor (que continua a correr) mas no lado do tracer o utilizador ter que terminar com o programa à bruta, uma possível solução para isto seria do lado do monitor escrever a mensagem de erro no pipe fazendo assim com que o programa desbloqueasse e termina-se normalmente. Com mais algum tempo implementaríamos isto.\\
 
->>>>>>> fa6e18f5ec94f3b7459a4ae67ef1a37f58302648
 A grande maioria dos problemas que tivemos foi mais com C do que propriamente com a comunicação entre programas/ficheiros, com a exceção de algumas leituras dos pipes que acabaram por ser resolvidas.\\
 
 Foi um trabalho interessante que envolveu toda a matéria usada nas aulas práticas e que apesar de desafiador foi também muito produtivo, pois para além de aprendermos mais sobre a cadeira de \textit{Sistemas Operativos} também aprendemos mais sobre \textit{Git/Github}, \textit{LaTex/Markdown} e mesmo a linguagem \textit{C} em si.
 
 
 \end{document}
-
-
