@@ -23,7 +23,7 @@ Miguel António Vaz Pinto Pereira (a72161)\\}
 \maketitle
 \tableofcontents
 \newpage
-\section{Introdução}
+\section*{Introdução}
 Através deste projeto, pretendemos implementar um serviço de monitorização eficaz de um ou vários programas.\\
 
 A monitorização e rastreio da execução de programas são aspetos críticos do desenvolvimento e manutenção de software, que consistem na observação do comportamento do programa para identificar erros, problemas de desempenho, entre outros. Uma das formas eficazes de rastrear a execução de programas é através de chamadas de sistema, que possibilitam ao programa solicitar serviços ao \textbf{kernel} do sistema operacional e interagir com o sistema operativo subjacente de forma segura e padronizada.\\
@@ -34,8 +34,8 @@ O objetivo deste projeto é concretizar uma comunicação sólida e segura entre
 Espera-se que no término do desenvolvimento feito pelo grupo, todas as funcionalidades \textit{(básicas e avançadas)} estejam corretamente implementadas e toda a conexão esteja operacional e segura.
 
 \newpage
-\section{Funcionalidades Básicas}
-\subsection{Execução de programas por parte do utilizador}
+\chapter{Funcionalidades Básicas}
+\section{Execução de programas por parte do utilizador}
 
 Em \textbf{geral,}\\
 
@@ -52,14 +52,13 @@ Com isto em mente, recorreu-se a uma função tokenizer, aonde se dá a separaç
 
 Para a transição de informação entre o cliente e o servidor de um programa \textit{(entre os pipes e, por continuidade, as pipelines)}, procedeu-se a criação de uma struct que armazena todos os dados aos quais pretendemos trabalhar com; desde o comando em si, argumentos associados, o tempo de iniciação do processo e respetivo tempo de execução. Deste modo, haverá menos perda de informação e esta estará organizada de uma maneira mas sucinta.
 
-\subsubsection{\underline{Novo Programa do Utilizador e Respectiva Terminação}}
+\subsection{Novo Programa do Utilizador e Respectiva Terminação}
 
 \subparagraph{Cliente:}
 A funcionalidade básica do projeto, o \textbf{execute}, procede com a cálculo de um processo filho que estará conectado a um pipe que servirá para futuro intercâmbio de informação com os processos a correr. Prossegue-se então para a execução os comandos que serão introduzidos pelo utilizador seguido da função.
-Com a função \textbf{gettimeofday}, procedemos a atribuição do tempo inicial ao qual um programa começa a executar e passa-se essa informação através de uma struct previamente criada a fim de guardar o \textbf{PID} \textit{(do filho em causa)} e esse mesmo tempo para o processo pai através de um pipe anónimo e ao servidor atravès de um \textbf{FIFO}.\par
-Neste processo, também será enviado o nome do comando que foi executado com sucesso.\\
-
-Assim que o processo filho termina a sua execução, o processo pai (que estava em modo \textbf{WAIT}, ou seja, em modo espera) chama também a função gettimeofday para obter o tempo de término e com a informação recebida do filho, este calcula a diferença entre ambos – isto é, o tempo que o programa demorou a executar. Essa duração em milissegundos juntamente com o \textbf{PID} do processo filho que acabou de concluir serão então enviados para o servidor por \textbf{FIFO}.\\
+Com a função \textbf{gettimeofday}, procedemos a atribuição do tempo inicial ao qual um programa começa a executar e passa-se essa informação através de uma struct previamente criada a fim de guardar o \textbf{PID} \textit{(do filho em causa)} e esse mesmo tempo para o processo pai através de um pipe anónimo e ao servidor atravès de um \textbf{FIFO}.\\
+Neste processo, também será enviado o nome do comando que foi executado com sucesso.
+Assim que o processo filho termina a sua execução, o processo pai (que estava em modo \textbf{WAIT}, ou seja, em modo espera) chama também a função gettimeofday para obter o tempo de término e com a informação recebida do filho, este calcula a diferença entre ambos – isto é, o tempo que o programa demorou a executar. Essa duração em milissegundos juntamente com o \textbf{PID} do processo filho que acabou de concluir serão então enviados para o servidor por \textbf{FIFO}.\par
 
 Durante o correr das introduções deste pedaço de código, o utilizador é informado do \textbf{PID} do programa que está a correr e no final, o tempo de execução do mesmo. O utilizador também é informado de vários erros que posso acontecer durante a execução.
 
@@ -67,7 +66,7 @@ Durante o correr das introduções deste pedaço de código, o utilizador é inf
 No seguimento de obtenção de uma melhor dinâmica de consulta de programas ainda em execução \textit{(e suas respectivas informações}, decidiu-se proceder a criação de um array chamado store que armazena em cada posição uma \textbf{struct prog} com esses mesmo dados. Sendo assim, torna-se uma das peças chave no código do projeto.
 \subsubsection{\underline{Server Block}}
 Para manter o servidor a correr, foi aberto um descritor de escrita que se mantém bloqueado enquanto não houver descritores de leitura abertos, mantendo assim o servidor a correr para "sempre".
-\subsection{Kill}
+\subsubsection{\underline{Kill}}
 Para evitar possíveis consequências \textit{(como o não fazer unlink e close)} com o fechar do servidor usando o \textbf{CTRL + C}, decidiu-se criar o \textbf{comando kill} para que este ponha um fim ao estado acima definido como \textbf{Server Block}.\\
 Este comando interrompe o ciclo de leitura com um break, obrigando o processo a entrar na fase de encerramento dos descritores e unlink dos pipes.
 
@@ -75,14 +74,13 @@ Este comando interrompe o ciclo de leitura com um break, obrigando o processo a 
 
 Para simplificar o processamento de informação dos vários programas que estão a execução, criou-se um array store que vai armazenar em cada índice struct prog. Tendo este array, inicializamos a leitura do \textbf{PID} enviado e vai consultar se este já existe dentro de algum índice do store. Se encontrado, quer dizer que o programa em questão já terminou; se não encontrar, armazena-o.\\ 
 
-\begin{figure}[b]
+\begin{figure}[h]
     \centering
     \includegraphics[width = 0.6\textwidth]{figs/execute-u.png}
     \caption{Demonstração da execução do execute-u.}
     \label{f}
 \end{figure}
 
-\newpage
 \subsection{Consulta dos Programas em Execução}
 A função status quais são os programas que estão a executar e o seu tempo até ao momento (milisegundos). Os resultados serão apresentados ao utilizador pelo cliente, listados um por linha.
 
@@ -103,22 +101,24 @@ Com o array store passado na função, é feito o cálculo dos vários programas
     \label{f}
 \end{figure}
 
-\section{Funcionalidades Avançadas}
-\subsection{Execução Encadeada de Programas}
+\newpage
+\chapter{Funcionalidades Avançadas}
+\section{Execução Encadeada de Programas}
 
 \subparagraph{Cliente:} Inicialmente abre-se um \textbf{FIFO} onde irá ser escrito, tal como no resto das funcionalidades deste programa, uma \textbf{struct prog} que guarda o \textbf{PID} do pipeline \textit{(no caso, \textbf{PID} do processo pai)}, os comandos \textit{(provenientes do utilizador)}, e o ‘start’ \textit{(o valor resultante da função gettimeofday)}. Consecutivamente, envia-se a informação guardada para o servidor pelo pipe. Verificado o envio, o utilizador recebe notificação sobre o ID do processo da pipeline em execução - \textbf{PID} do processo pai.\\
 
 Para executar as funções solicitadas pelo utilizador, o grupo implementou um loop que itera sobre um array de arrays de tamanho dois, onde será criado um pipe em cada posição do arrray usando esse mesmo par. Para uma melhor organização do código, o loop é dividido em três casos distintos.
 
-\subsubsection{\underline{Primeiro Caso}}
+\subsection{Primeiro Caso}
 No primeiro caso, ou seja, no caso de ser o primeiro programa, é criado um pipe que estabelece comunicação entre este e o segundo programa. Para tal, é necessário alterar o file descriptor 1 para o file descriptor de escrita do pipe, de forma a permitir que o output do primeiro comando seja redirecionado para o próximo pipe em vez de ser escrito diretamente no \textbf{STDOUT}.\par
 Após a criação do processo filho, este é responsável pela execução do comando fornecido enquanto o processo pai continua a executar o loop. No entanto, caso ocorra algum erro durante a execução do comando pelo processo filho, a substituição completa do código deste pela chamada ao sistema \textbf{execvp} não ocorrerá, e o programa terminará.
 
-\subsubsection{\underline{Segundo Caso}}
+\newpage
+\subsection{Segundo Caso}
 No segundo caso, isto é, no último programa da pipeline, o processo pai criará um novo filho, seguindo um procedimento semelhante ao anteriormente descrito. A diferença reside no facto de que, ao contrário do primeiro caso, o descritor de leitura deve ser alterado em vez do descriptor de escrita, uma vez que o objetivo é ler o output do pipe em vez do \textbf{STDIN}. Para esse fim, a \textbf{função dup2()} é novamente utilizada.\par
 Neste caso, é mantido o file descriptor de escrita para o \textbf{STDOUT} pois estamos peranto o último programa a ser executado.
 
-\subsubsection{\underline{Terceiro Caso}}
+\subsection{Terceiro Caso}
 No terceiro caso, ou seja, para os programas intermédios, é necessário alterar ambos os descritores de ficheiros, uma vez que não se pretende que este pipe leia do \textbf{STDIN} ou escreva no \textbf{STDOUT}, mas sim no descritor de leitura do pipe anterior e no descritor de escrita do pipe atual, respetivamente. Para realizar esta operação, é necessário utilizar a system call \textbf{dup2} duas vezes, para alterar os descritores de ficheiros adequadamente.\\
 
 Deve-se salientar que é necessário fechar os file descriptors que não serão mais utilizados no processo pai. Quando se faz \textbf{fork}, é obtida uma cópia dos mesmos, e se não forem mais utilizados, devem ser fechados para evitar vazamento de memória. O mesmo deve ser feito nos processos filhos, fechando os descritores após o uso, para o bom funcionamento do programa.
@@ -132,8 +132,8 @@ O código responsável pela execução da pipeline calcula também o tempo de ex
     \label{f}
 \end{figure}
 
-
-\subsection{Armazenamento de Informação sobre Programas Terminados}
+\newpage
+\section{Armazenamento de Informação sobre Programa\\Terminados}
 
 \subparagraph{Cliente:} Quando o utilizador fornece ao cliente uma das duas opções de execução, este prepara a informação necessária numa \textbf{struct prog} para o servidor avaliar o rumo a tomar. Finalizando o processo, é enviada outra struct com o \textbf{PID} e o tempo de execução.
 
@@ -147,13 +147,14 @@ Tendo o programa encontrado o seu término, é criado um ficheiro na diretoria f
     \label{f}
 \end{figure}
 
-\subsection{Consulta de Programas Terminados}
+\section{Consulta de Programas Terminados}
 
-\subsubsection{\underline{Stats-Time}}
+\subsection{Stats-Time}
 \subparagraph{Cliente:} Na funcionalidade stats-time, o utilizador passa ao cliente uma série de \textbf{PIDs} onde quer que seja calculado o tempo total de execução nos programas dos mesmos.
 No lado do cliente é verificado a opção e é passado ao servidor uma struct com o comando \textbf{“stats-time”} e no campo args seguem os \textbf{PIDs} passados pelo utilizador.\par
 Todo o processo é efetuado no servidor e no final, o cliente recebe a string previamente formatada através de um \textbf{FIFO}, optando assim por uma solução mais simples em vez de voltar-se a utilizar a struct.
 
+\newpage
 \subparagraph{Servidor:} É enviado ao servidor uma \textbf{struct prog} e essa é lida, entrando na opção stats-time onde a função \textbf{\texttt{status\char`_time}} será chamada para execução. \par
 Com isto, percorre-se os \textbf{PIDs} fornecidos, onde segue a abertura do ficheiro correspondente a cada um deles. A leitura é efetuada byte a byte para se conseguir encontrar o final da linha, sabendo assim quando termina o valor em milisegundos do seu tempo de execução \textit{(que se encontra na primeira linha)} e adicionar ao total. Quando a primeira linha termina, o ciclo é interrompido pois já foi obtida a informação pedida.\par
 No final de percorrer todos os ficheiros dos \textbf{PIDs}, passa-se o valor total em formato string ao cliente que por sua vez mostra a mesma recebida ao utilizador.
@@ -165,7 +166,7 @@ No final de percorrer todos os ficheiros dos \textbf{PIDs}, passa-se o valor tot
     \label{f}
 \end{figure}
 
-\subsubsection{\underline{Stats-Command}}
+\subsection{Stats-Command}
 A funcionalidade \textbf{stats-command} partilha uma certa similaridade com a funcionalidade \textbf{stats-time}. Porém, a nova recebe mais um argumento para a sua execução proceder conforme o esperado.
 
 \subparagraph{Cliente:}
@@ -185,7 +186,7 @@ Lido o último \textbf{PID}, a informação obtida é então formatada numa stri
 \end{figure}
 
 \newpage
-\subsubsection{\underline{Status-Uniq}}
+\subsection{Status-Uniq}
 No caso do stats-uniq, a similaridade é maior com a primeira funcionalidade descrita na Consulta de Programas Terminados, visto que o campo \textit{args} da \textbf{struct prog} só leva os \textbf{PIDs} e no campo \textit{cmd} leva o \textbf{stats-uniq}.
 
 \subparagraph{Cliente:} Como descrito em cima, é enviado ao servidor uma \textbf{struct prog} com as informações pedidas para o servidor atuar sobre a função definida como \textbf{stats-uniq}.
@@ -204,7 +205,7 @@ Com o término da leitura de \textbf{PIDs}, é passado ao cliente os comandos gu
 \end{figure}
 
 \newpage
-\section{Conclusão}
+\section*{Conclusão}
 Com o desenvolvimento do projeto, conseguimos cumprir todas as funcionalidades básicas e avançadas propostas. Segundo os testes que nós efetuamos, não encontramos falhas nas funcionalidades mas as mesmas podem existir de qualquer das formas.\\
 
 Em termos de melhorias possíveis, podiamos tentar com que quando o utilizador por exemplo executa \textbf{./tracer execute -u ls} o programa retornasse erro pois não colocou o programa a executar dentro de aspas. Existe tratamento de erros para quando é colocado \textbf{./tracer execute -u ls -l} devido ao número errado de argumentos mas com o número correeto não.\par
