@@ -11,7 +11,7 @@ void stats_time(char args[][7], char* folder) {
     int fd, res, pos;
     int bytes_read, bytes_written;
     int total = 0;
-    char str[64];
+    char str[128];
     char buffer[100] = "";
     char c;
     
@@ -68,7 +68,7 @@ void stats_time(char args[][7], char* folder) {
         perror("Error formatting string.");
         return;
     }
-    
+
     // Sends the string to the server
     bytes_written = write(fd, str, strlen(str)); 
     if (bytes_written == -1) {
@@ -88,7 +88,7 @@ void stats_time(char args[][7], char* folder) {
 void stats_command(char* cmd, char args[][7], char* folder) {
 
     int fd, res, pos;
-    char c, str[64];
+    char c, str[128];
     char buffer[100] = "";
     int bytes_written, bytes_read = 0, total = 0;
 
@@ -175,7 +175,7 @@ void stats_command(char* cmd, char args[][7], char* folder) {
 void stats_uniq(char args[][7], char* folder) {
 
     int fd, res, bytes_written;
-    char c, str[64];
+    char c, str[128];
     char buffer[100] = "";
     int pos = 0, pos_store = 0, bytes_read = 0, line;
     char store[100][20];

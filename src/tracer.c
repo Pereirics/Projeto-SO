@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
     int fd_write, fd_read, bytes_read, bytes_written, res;
     char* store[MAX_TOKENS];
     char cmd[MAX_TOKENS];
-    char buffer[100];
+    char buffer[128];
     struct prog st;
 
     // Executes option "execute -u" that executes a program given by the user
@@ -175,7 +175,6 @@ int main(int argc, char **argv) {
             }
 
             // Reads the contents from the pipe
-            char buffer[32];
             bytes_read = read(fd_read, &buffer, sizeof(buffer));
             if (bytes_read == -1) {
                 perror("Error reading from pipe_to_client.");
@@ -248,7 +247,6 @@ int main(int argc, char **argv) {
             }
 
             // Reads the contents from the buffer
-            char buffer[64];
             bytes_read = read(fd_read, &buffer, sizeof(buffer));
             if (bytes_read == -1) {
                 perror("Error reading from pipe_to_client.");
