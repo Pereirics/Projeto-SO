@@ -4,6 +4,9 @@ We aim to implement a program monitoring service for a machine. Users should be 
 
 We will be using named pipes and unnamed pipes to communicate between files and between processes.
 
+## Grade
+The final grade was 17.5. Some aspects we were told to improve were: add forks in the functionalities that execute on the monitor side, add individual FIFO's for each PID file instead of one universal one.
+
 ## Usage
 
 Here is a how the program should be used:
